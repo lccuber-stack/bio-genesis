@@ -62,14 +62,16 @@
         }
         /* Anpassad scrollbar för mönster-modalen */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 0px;
+            height: 0px;
+            display: none;
         }
-        ::-webkit-scrollbar-track {
-            background: transparent;
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(100, 116, 139, 0.4);
-            border-radius: 9999px;
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
         }
         /* Puls-animation för aktiv körning */
         @keyframes pulse-ring {
@@ -305,68 +307,30 @@
     </footer>
 
     <!-- MODAL 1: Pattern Library -->
-    <div id="modal-library" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform transition-all max-h-[85vh] flex flex-col">
-            <div class="flex items-center justify-between mb-4">
+    <div id="modal-library" class="fixed inset-0 z-50 bg-black/65 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-2xl rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl transform transition-all max-h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between mb-3 shrink-0">
                 <div>
-                    <h2 class="text-xl font-bold">Patterns & Organisms</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Choose a starting formation for the grid</p>
+                    <h2 class="text-xl font-bold tracking-tight">Patterns & Organisms</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Select a verified formation with live preview</p>
                 </div>
-                <button class="close-modal p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white">
+                <button class="close-modal p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white transition active:scale-90">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto pr-1 pb-4">
-                <button data-pattern="symmetric_bloom" class="pattern-card text-left p-4 rounded-2xl border border-blue-500/40 bg-blue-50/50 dark:bg-blue-950/30 hover:border-blue-500 transition">
-                    <div class="font-bold text-blue-600 dark:text-blue-400 text-sm mb-1">✨ Symmetric Quantum Bloom</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">Evolves in mesmerizing kaleidoscopic waves across the grid.</p>
-                </button>
+            <!-- Category Filter Pills (No ugly scrollbar) -->
+            <div id="pattern-categories" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 mb-2 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
+                <button data-cat="all" class="cat-pill active px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-600 text-white whitespace-nowrap transition">All (18)</button>
+                <button data-cat="quantum" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap transition">⚛️ Quantum</button>
+                <button data-cat="guns" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap transition">🚀 Guns & Ships</button>
+                <button data-cat="oscillators" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap transition">💫 Oscillators</button>
+                <button data-cat="chaos" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap transition">🧬 Methuselahs</button>
+            </div>
 
-                <button data-pattern="gosper_gun" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
-                    <div class="font-bold text-sm mb-1">🚀 Gosper Glider Gun</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">Classic perpetual machine that fires an endless stream of gliders.</p>
-                </button>
-
-                <button data-pattern="pulsar" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
-                    <div class="font-bold text-sm mb-1">💫 Cosmic Pulsar</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">A large symmetric oscillator with a rhythmic period of 3.</p>
-                </button>
-
-                <button data-pattern="r_pentomino" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
-                    <div class="font-bold text-sm mb-1">🧬 R-Pentomino (Chaos)</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">Just 5 cells that spark 1,103 generations of pure chaos.</p>
-                </button>
-
-                <button data-pattern="spaceship_fleet" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
-                    <div class="font-bold text-sm mb-1">🛸 Spaceship Fleet</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">A squadron of LWSS spaceships cruising across the grid.</p>
-                </button>
-
-                <button data-pattern="pentadecathlon" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
-                    <div class="font-bold text-sm mb-1">⚡ Pentadecathlon</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">A rhythmic 15-generation oscillator that pulses like a heartbeat.</p>
-                </button>
-
-                <button data-pattern="acorn" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
-                    <div class="font-bold text-sm mb-1">🌱 Acorn Methuselah</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">7 tiny cells that grow into a massive ecosystem over 5,206 generations.</p>
-                </button>
-
-                <button data-pattern="diehard" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
-                    <div class="font-bold text-sm mb-1">⏳ Diehard</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">A mysterious 7-cell pattern that vanishes completely after 130 steps.</p>
-                </button>
-
-                <button data-pattern="quantum_reactor" class="pattern-card text-left p-4 rounded-2xl border border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/20 hover:border-amber-500 transition">
-                    <div class="font-bold text-amber-600 dark:text-amber-400 text-sm mb-1">⚛️ Quantum Catalyst Reactor</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">Immortal golden energy nodes surrounded by an active plasma ring.</p>
-                </button>
-
-                <button data-pattern="random" class="pattern-card text-left p-4 rounded-2xl border border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 hover:border-emerald-500 transition">
-                    <div class="font-bold text-emerald-600 dark:text-emerald-400 text-sm mb-1">🎲 Primordial Soup (Random)</div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400">Populates the universe with random life and golden catalysts.</p>
-                </button>
+            <!-- Dynamic Pattern Cards Grid with Mini Canvas Previews -->
+            <div id="pattern-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto no-scrollbar pb-3">
+                <!-- Populated dynamically with live visual mini-grids -->
             </div>
         </div>
     </div>
@@ -631,19 +595,22 @@
             document.getElementById('btn-step-back').disabled = historyStack.length === 0;
         }
 
-        // --- RENDERING (CANVAS) ---
-        let canvasWidth = window.innerWidth;
-        let canvasHeight = window.innerHeight;
+        // --- RENDERING & CANVAS ---
+        let canvasWidth = 0;
+        let canvasHeight = 0;
 
         function resizeCanvas() {
             const rect = canvas.getBoundingClientRect();
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
             canvasWidth = rect.width || window.innerWidth;
             canvasHeight = rect.height || window.innerHeight;
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = Math.round(canvasWidth * dpr);
-            canvas.height = Math.round(canvasHeight * dpr);
+            canvas.width = Math.floor(canvasWidth * dpr);
+            canvas.height = Math.floor(canvasHeight * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            centerGrid();
+
+            if (offsetX === 0 && offsetY === 0) {
+                centerGrid();
+            }
             render();
         }
 
@@ -656,18 +623,15 @@
 
         function render() {
             const isDark = document.documentElement.classList.contains('dark');
-            const w = canvasWidth;
-            const h = canvasHeight;
 
             // Bakgrund
             ctx.fillStyle = isDark ? '#090d16' : '#f8fafc';
-            ctx.fillRect(0, 0, w, h);
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-            // Beräkna synliga rader/kolumner för maximal prestanda på mobil
             const startCol = Math.max(0, Math.floor(-offsetX / cellSize));
-            const endCol = Math.min(COLS, Math.ceil((w - offsetX) / cellSize));
+            const endCol = Math.min(COLS, Math.ceil((canvasWidth - offsetX) / cellSize));
             const startRow = Math.max(0, Math.floor(-offsetY / cellSize));
-            const endRow = Math.min(ROWS, Math.ceil((h - offsetY) / cellSize));
+            const endRow = Math.min(ROWS, Math.ceil((canvasHeight - offsetY) / cellSize));
 
             // Rita kvant-spår och celler
             for (let r = startRow; r < endRow; r++) {
@@ -677,40 +641,33 @@
                     const state = grid[r][c];
                     const trail = trailGrid[r][c];
 
-                    // Rita kvant-spår (om aktiverat)
-                    if (quantumMode && state === 0 && trail > 0.02) {
-                        ctx.fillStyle = isDark 
-                            ? `rgba(56, 189, 248, ${trail * 0.25})` 
-                            : `rgba(59, 130, 246, ${trail * 0.18})`;
+                    // Kvant-spår (efterglöd)
+                    if (state === 0 && quantumMode && trail > 0.02) {
+                        ctx.fillStyle = isDark
+                            ? `rgba(56, 189, 248, ${trail * 0.22})`
+                            : `rgba(37, 99, 235, ${trail * 0.16})`;
                         ctx.fillRect(x, y, cellSize, cellSize);
                     }
 
-                    // Rita levande cell eller katalysator
+                    // Levande cell eller Katalysator
                     if (state !== 0) {
+                        const pad = cellSize > 8 ? 1 : 0.2;
                         if (state === -1) {
-                            // Kvant-Katalysator (Guld/Amber med glöd)
+                            // Gyllene Kvant-Katalysator
                             ctx.fillStyle = '#f59e0b';
                         } else if (!quantumMode) {
-                            // Klassisk klarblå (som i originalbilden!)
+                            // Klassisk blå färg
                             ctx.fillStyle = isDark ? '#3b82f6' : '#1d4ed8';
                         } else {
-                            // Quantum Ålders-färgning: Nyfödd Cyan -> Blå -> Mogen Violett/Magenta
-                            if (state === 1) {
-                                ctx.fillStyle = isDark ? '#22d3ee' : '#0284c7'; // Nyfödd
-                            } else if (state < 5) {
-                                ctx.fillStyle = isDark ? '#3b82f6' : '#2563eb'; // Ung
-                            } else if (state < 15) {
-                                ctx.fillStyle = isDark ? '#818cf8' : '#4f46e5'; // Vuxen
-                            } else {
-                                ctx.fillStyle = isDark ? '#c084fc' : '#7c3aed'; // Åldrad visdom
-                            }
+                            // Åldersbaserad färggradient i Quantum Mode
+                            if (state === 1) ctx.fillStyle = '#38bdf8';       // Nyfödd: Ljus cyan
+                            else if (state < 5) ctx.fillStyle = '#3b82f6';    // Ung: Klarblå
+                            else if (state < 15) ctx.fillStyle = '#6366f1';   // Mogen: Indigo
+                            else ctx.fillStyle = '#a855f7';                   // Äldre: Violett
                         }
 
-                        const pad = cellSize > 8 ? 1 : 0;
-                        if (cellSize > 10) {
-                            // Rundade hörn när man är inzoomad
-                            roundRect(ctx, x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, Math.min(4, cellSize * 0.22));
-                            ctx.fill();
+                        if (cellSize >= 10) {
+                            drawRoundedRect(ctx, x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, Math.min(4, cellSize * 0.25));
                         } else {
                             ctx.fillRect(x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2);
                         }
@@ -718,34 +675,44 @@
                 }
             }
 
-            // Rita rutnätet (om cellerna är tillräckligt stora för att det ska se snyggt ut)
+            // Rita rutnätslinjer om cellerna är tillräckligt stora
             if (cellSize >= 6) {
-                ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(148, 163, 184, 0.35)';
+                ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(15, 23, 42, 0.10)';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
 
                 for (let c = startCol; c <= endCol; c++) {
-                    const x = Math.floor(offsetX + c * cellSize) + 0.5;
+                    const x = Math.round(offsetX + c * cellSize) + 0.5;
                     ctx.moveTo(x, Math.max(0, offsetY));
-                    ctx.lineTo(x, Math.min(h, offsetY + ROWS * cellSize));
+                    ctx.lineTo(x, Math.min(canvasHeight, offsetY + ROWS * cellSize));
                 }
                 for (let r = startRow; r <= endRow; r++) {
-                    const y = Math.floor(offsetY + r * cellSize) + 0.5;
+                    const y = Math.round(offsetY + r * cellSize) + 0.5;
                     ctx.moveTo(Math.max(0, offsetX), y);
-                    ctx.lineTo(Math.min(w, offsetX + COLS * cellSize), y);
+                    ctx.lineTo(Math.min(canvasWidth, offsetX + COLS * cellSize), y);
                 }
                 ctx.stroke();
             }
+
+            // Yttre ram runt spelplanen
+            ctx.strokeStyle = isDark ? 'rgba(59, 130, 246, 0.35)' : 'rgba(37, 99, 235, 0.35)';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(offsetX, offsetY, COLS * cellSize, ROWS * cellSize);
         }
 
-        function roundRect(ctx, x, y, width, height, radius) {
-            ctx.beginPath();
-            ctx.moveTo(x + radius, y);
-            ctx.arcTo(x + width, y, x + width, y + height, radius);
-            ctx.arcTo(x + width, y + height, x, y + height, radius);
-            ctx.arcTo(x, y + height, x, y, radius);
-            ctx.arcTo(x, y, x + width, y, radius);
-            ctx.closePath();
+        function drawRoundedRect(context, x, y, width, height, radius) {
+            context.beginPath();
+            context.moveTo(x + radius, y);
+            context.lineTo(x + width - radius, y);
+            context.quadraticCurveTo(x + width, y, x + width, y + radius);
+            context.lineTo(x + width, y + height - radius);
+            context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            context.lineTo(x + radius, y + height);
+            context.quadraticCurveTo(x, y + height, x, y + height - radius);
+            context.lineTo(x, y + radius);
+            context.quadraticCurveTo(x, y, x + radius, y);
+            context.closePath();
+            context.fill();
         }
 
         // --- HUVUDLOOP ---
@@ -761,47 +728,54 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // --- INTERAKTION: MUS & TOUCH (iPhone / iPad / Dator) ---
+        // --- INTERAKTION: MUS & TOUCH (iPhone, iPad, Desktop) ---
         let isPointerDown = false;
-        let lastPointerPos = { x: 0, y: 0 };
+        let lastPointerX = 0;
+        let lastPointerY = 0;
         let initialPinchDist = null;
         let initialCellSize = cellSize;
 
-        function getCanvasCoords(clientX, clientY) {
+        function getGridCoords(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
-            return {
-                x: clientX - rect.left,
-                y: clientY - rect.top
-            };
+            const relX = clientX - rect.left;
+            const relY = clientY - rect.top;
+            const col = Math.floor((relX - offsetX) / cellSize);
+            const row = Math.floor((relY - offsetY) / cellSize);
+            return { row, col };
         }
 
         function applyToolAt(clientX, clientY) {
-            const pos = getCanvasCoords(clientX, clientY);
-            const col = Math.floor((pos.x - offsetX) / cellSize);
-            const row = Math.floor((pos.y - offsetY) / cellSize);
+            const { row, col } = getGridCoords(clientX, clientY);
+            if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
 
-            if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
-                if (currentTool === 'draw' && grid[row][col] === 0) {
+            if (currentTool === 'draw') {
+                if (grid[row][col] !== 1) {
                     grid[row][col] = 1;
-                    population++;
+                    recalculatePopulation();
                     updateHUD();
-                } else if (currentTool === 'catalyst' && grid[row][col] !== -1) {
-                    if (grid[row][col] === 0) population++;
+                }
+            } else if (currentTool === 'catalyst') {
+                if (grid[row][col] !== -1) {
                     grid[row][col] = -1;
+                    recalculatePopulation();
                     updateHUD();
-                } else if (currentTool === 'erase' && grid[row][col] !== 0) {
+                }
+            } else if (currentTool === 'erase') {
+                if (grid[row][col] !== 0) {
                     grid[row][col] = 0;
                     trailGrid[row][col] = 0;
-                    population--;
+                    recalculatePopulation();
                     updateHUD();
                 }
             }
+            render();
         }
 
-        // Mus-händelser
+        // Mus-händelser (Desktop)
         canvas.addEventListener('mousedown', (e) => {
             isPointerDown = true;
-            lastPointerPos = getCanvasCoords(e.clientX, e.clientY);
+            lastPointerX = e.clientX;
+            lastPointerY = e.clientY;
             if (currentTool !== 'pan' && e.button === 0) {
                 applyToolAt(e.clientX, e.clientY);
             }
@@ -809,143 +783,452 @@
 
         window.addEventListener('mousemove', (e) => {
             if (!isPointerDown) return;
-            const pos = getCanvasCoords(e.clientX, e.clientY);
-            if (currentTool === 'pan' || e.buttons === 4 || e.shiftKey) {
-                offsetX += pos.x - lastPointerPos.x;
-                offsetY += pos.y - lastPointerPos.y;
+            if (currentTool === 'pan' || e.buttons === 2 || e.buttons === 4) {
+                offsetX += e.clientX - lastPointerX;
+                offsetY += e.clientY - lastPointerY;
+                render();
             } else {
                 applyToolAt(e.clientX, e.clientY);
             }
-            lastPointerPos = pos;
+            lastPointerX = e.clientX;
+            lastPointerY = e.clientY;
         });
 
         window.addEventListener('mouseup', () => {
             isPointerDown = false;
         });
 
-        // Mushjul för zoom
+        // Zoom med mushjul
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const pos = getCanvasCoords(e.clientX, e.clientY);
-            const zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
-            zoomAt(pos.x, pos.y, zoomFactor);
+            const rect = canvas.getBoundingClientRect();
+            const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
+            zoomAt(e.clientX - rect.left, e.clientY - rect.top, zoomFactor);
         }, { passive: false });
 
-        // Touch-händelser (1 finger = rita/panorera, 2 fingrar = pinch-zoom & panorera)
+        function zoomAt(centerX, centerY, factor) {
+            const oldSize = cellSize;
+            const newSize = Math.max(4, Math.min(48, oldSize * factor));
+            if (newSize === oldSize) return;
+
+            offsetX = centerX - (centerX - offsetX) * (newSize / oldSize);
+            offsetY = centerY - (centerY - offsetY) * (newSize / oldSize);
+            cellSize = newSize;
+
+            const pct = Math.round((cellSize / 14) * 100);
+            document.getElementById('btn-zoom-reset').textContent = `${pct}%`;
+            render();
+        }
+
+        // Touch-händelser (iPhone & iPad: 1 finger = rita/panorera, 2 fingrar = pinch-zoom & panorera)
         canvas.addEventListener('touchstart', (e) => {
-            if (e.cancelable) e.preventDefault();
+            e.preventDefault();
             if (e.touches.length === 1) {
                 isPointerDown = true;
-                const t = e.touches[0];
-                lastPointerPos = getCanvasCoords(t.clientX, t.clientY);
+                const touch = e.touches[0];
+                lastPointerX = touch.clientX;
+                lastPointerY = touch.clientY;
                 if (currentTool !== 'pan') {
-                    applyToolAt(t.clientX, t.clientY);
+                    applyToolAt(touch.clientX, touch.clientY);
                 }
             } else if (e.touches.length === 2) {
                 isPointerDown = false;
-                initialPinchDist = getPinchDistance(e.touches);
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                initialPinchDist = Math.hypot(dx, dy);
                 initialCellSize = cellSize;
-                lastPointerPos = getPinchCenter(e.touches);
+                lastPointerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                lastPointerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
             }
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
-            if (e.cancelable) e.preventDefault();
+            e.preventDefault();
             if (e.touches.length === 1 && isPointerDown) {
-                const t = e.touches[0];
-                const pos = getCanvasCoords(t.clientX, t.clientY);
+                const touch = e.touches[0];
                 if (currentTool === 'pan') {
-                    offsetX += pos.x - lastPointerPos.x;
-                    offsetY += pos.y - lastPointerPos.y;
+                    offsetX += touch.clientX - lastPointerX;
+                    offsetY += touch.clientY - lastPointerY;
+                    render();
                 } else {
-                    applyToolAt(t.clientX, t.clientY);
+                    applyToolAt(touch.clientX, touch.clientY);
                 }
-                lastPointerPos = pos;
+                lastPointerX = touch.clientX;
+                lastPointerY = touch.clientY;
             } else if (e.touches.length === 2 && initialPinchDist) {
-                const dist = getPinchDistance(e.touches);
-                const center = getPinchCenter(e.touches);
-                const scale = dist / initialPinchDist;
-                const targetSize = Math.max(4, Math.min(48, initialCellSize * scale));
-                
-                zoomAt(center.x, center.y, targetSize / cellSize);
-                offsetX += center.x - lastPointerPos.x;
-                offsetY += center.y - lastPointerPos.y;
-                lastPointerPos = center;
+                const rect = canvas.getBoundingClientRect();
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.hypot(dx, dy);
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+                offsetX += midX - lastPointerX;
+                offsetY += midY - lastPointerY;
+
+                const targetSize = Math.max(4, Math.min(48, initialCellSize * (dist / initialPinchDist)));
+                const factor = targetSize / cellSize;
+                zoomAt(midX - rect.left, midY - rect.top, factor);
+
+                lastPointerX = midX;
+                lastPointerY = midY;
             }
         }, { passive: false });
 
         canvas.addEventListener('touchend', (e) => {
-            if (e.touches.length < 2) initialPinchDist = null;
-            if (e.touches.length === 0) isPointerDown = false;
+            if (e.touches.length === 0) {
+                isPointerDown = false;
+                initialPinchDist = null;
+            } else if (e.touches.length === 1) {
+                initialPinchDist = null;
+                lastPointerX = e.touches[0].clientX;
+                lastPointerY = e.touches[0].clientY;
+            }
         });
 
-        function getPinchDistance(touches) {
-            return Math.hypot(
-                touches[0].clientX - touches[1].clientX,
-                touches[0].clientY - touches[1].clientY
-            );
+        // --- MÖNSTERBIBLIOTEK (18 VERIFIERADE MÖNSTER MED MINI-FÖRHANDSVISNING) ---
+        const PATTERN_CATALOG = [
+            {
+                id: 'symmetric_bloom',
+                name: 'Symmetric Quantum Bloom',
+                icon: '✨',
+                category: 'quantum',
+                accent: 'blue',
+                desc: 'Kaleidoscopic formation that unfolds into mesmerizing geometric waves.',
+                cells: [
+                    [-6,-6],[-6,-5],[-5,-6],[-5,-5], [-6,-1],[-6,0],[-6,1], [-6,5],[-6,6],[-5,5],[-5,6],
+                    [-2,-10],[-2,-9],[-1,-11],[-1,-8],[0,-12],[0,-7],[1,-10],[1,-6],[2,-9],[2,-6],[3,-8],
+                    [-2,9],[-2,10],[-1,8],[-1,11],[0,7],[0,12],[1,6],[1,10],[2,6],[2,9],[3,8],
+                    [0,-4],[0,-3],[1,-4],[1,-2],[2,-3],[3,-2],[4,-3],[4,-2],[5,-4],[5,-1],[6,-3],[6,-2],
+                    [0,3],[0,4],[1,2],[1,4],[2,3],[3,2],[4,2],[4,3],[5,1],[5,4],[6,2],[6,3]
+                ]
+            },
+            {
+                id: 'quantum_reactor',
+                name: 'Quantum Catalyst Reactor',
+                icon: '⚛️',
+                category: 'quantum',
+                accent: 'amber',
+                desc: '5 immortal golden energy nodes surrounded by an active plasma ring.',
+                catalysts: [[-3,-3],[-3,3],[3,-3],[3,3],[0,0]],
+                cells: [
+                    [-5,-5],[-5,-4],[-5,-3],[-5,-2],[-5,-1],[-5,0],[-5,1],[-5,2],[-5,3],[-5,4],[-5,5],
+                    [5,-5],[5,-4],[5,-3],[5,-2],[5,-1],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],
+                    [-4,-5],[-3,-5],[-2,-5],[-1,-5],[0,-5],[1,-5],[2,-5],[3,-5],[4,-5],
+                    [-4,5],[-3,5],[-2,5],[-1,5],[0,5],[1,5],[2,5],[3,5],[4,5],
+                    [-1,-1],[-1,1],[1,-1],[1,1]
+                ]
+            },
+            {
+                id: 'supernova_core',
+                name: 'Supernova Catalyst Core',
+                icon: '🌟',
+                category: 'quantum',
+                accent: 'amber',
+                desc: 'Pulsing core of golden catalysts that continuously radiates shockwaves.',
+                catalysts: [[0,-2],[0,2],[-2,0],[2,0]],
+                cells: [
+                    [-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1],
+                    [-4,-1],[-4,0],[-4,1],[4,-1],[4,0],[4,1],
+                    [-1,-4],[0,-4],[1,-4],[-1,4],[0,4],[1,4]
+                ]
+            },
+            {
+                id: 'quantum_helix',
+                name: 'Quantum DNA Helix',
+                icon: '🧬',
+                category: 'quantum',
+                accent: 'purple',
+                desc: 'Double-stranded genetic lattice anchored by golden stabilizer nodes.',
+                catalysts: [[-6,0],[0,0],[6,0]],
+                cells: [
+                    [-7,-2],[-7,2],[-6,-3],[-6,3],[-5,-2],[-5,2],[-4,-1],[-4,1],
+                    [-3,0],[-2,-1],[-2,1],[-1,-2],[-1,2],[0,-3],[0,3],[1,-2],[1,2],
+                    [2,-1],[2,1],[3,0],[4,-1],[4,1],[5,-2],[5,2],[6,-3],[6,3],[7,-2],[7,2]
+                ]
+            },
+            {
+                id: 'gosper_gun',
+                name: 'Gosper Glider Gun',
+                icon: '🚀',
+                category: 'guns',
+                accent: 'blue',
+                desc: 'Classic perpetual engine firing an endless stream of diagonal gliders.',
+                offset: [-5, -18],
+                cells: [
+                    [0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
+                    [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
+                    [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
+                    [7,11],[7,15],[8,12],[8,13]
+                ]
+            },
+            {
+                id: 'simkin_gun',
+                name: 'Simkin Glider Gun',
+                icon: '🛰️',
+                category: 'guns',
+                accent: 'blue',
+                desc: 'Compact period-120 gun that fires gliders cleanly across the universe.',
+                offset: [-10, -16],
+                cells: [
+                    [0,0],[0,1],[0,7],[0,8],[1,0],[1,1],[1,7],[1,8],
+                    [3,4],[3,5],[4,4],[4,5],
+                    [9,22],[9,23],[9,25],[9,26],[10,21],[10,27],[11,21],[11,28],[11,31],[11,32],
+                    [12,21],[12,22],[12,23],[12,27],[12,31],[12,32],[13,26],
+                    [17,20],[17,21],[18,20],[19,21],[19,22],[19,23],[20,23]
+                ]
+            },
+            {
+                id: 'copperhead',
+                name: 'Copperhead Spaceship',
+                icon: '🛸',
+                category: 'guns',
+                accent: 'cyan',
+                desc: 'Sleek c/10 orthogonal spaceship discovered in 2016 with glowing exhaust.',
+                cells: [
+                    [-5,-1],[-5,0],[-4,-2],[-4,1],[-3,-3],[-3,-2],[-3,1],[-3,2],
+                    [-2,-1],[-2,0],[-1,-2],[-1,1],[0,-3],[0,2],[1,-3],[1,2],
+                    [3,-2],[3,-1],[3,0],[3,1],[4,-1],[4,0],[6,-1],[6,0],[7,-1],[7,0]
+                ]
+            },
+            {
+                id: 'spaceship_fleet',
+                name: 'Spaceship Armada (LWSS/HWSS)',
+                icon: '👾',
+                category: 'guns',
+                accent: 'cyan',
+                desc: 'Escort squadron of Light, Middle, and Heavyweight spaceships.',
+                cells: [
+                    [-9,-8],[-9,-5],[-8,-9],[-7,-9],[-7,-5],[-6,-9],[-6,-8],[-6,-7],[-6,-6],
+                    [-1,-6],[-1,-3],[0,-7],[1,-7],[1,-3],[2,-7],[2,-6],[2,-5],[2,-4],[1,-5],
+                    [7,-8],[7,-5],[8,-9],[9,-9],[9,-5],[10,-9],[10,-8],[10,-7],[10,-6],[9,-7],[9,-6]
+                ]
+            },
+            {
+                id: 'pulsar',
+                name: 'Cosmic Pulsar',
+                icon: '💫',
+                category: 'oscillators',
+                accent: 'indigo',
+                desc: 'Iconic symmetric star-shaped oscillator with a rhythmic period of 3.',
+                cells: [
+                    [-6,-4],[-6,-3],[-6,-2],[-6,2],[-6,3],[-6,4],
+                    [-4,-6],[-3,-6],[-2,-6],[-4,-1],[-3,-1],[-2,-1],[-4,1],[-3,1],[-2,1],[-4,6],[-3,6],[-2,6],
+                    [-1,-4],[-1,-3],[-1,-2],[-1,2],[-1,3],[-1,4],
+                    [1,-4],[1,-3],[1,-2],[1,2],[1,3],[1,4],
+                    [2,-6],[3,-6],[4,-6],[2,-1],[3,-1],[4,-1],[2,1],[3,1],[4,1],[2,6],[3,6],[4,6],
+                    [6,-4],[6,-3],[6,-2],[6,2],[6,3],[6,4]
+                ]
+            },
+            {
+                id: 'koks_galaxy',
+                name: "Kok's Spiral Galaxy",
+                icon: '🌌',
+                category: 'oscillators',
+                accent: 'indigo',
+                desc: 'Rotating 8-period spiral galaxy that swirls smoothly in place.',
+                cells: [
+                    [-4,-4],[-4,-3],[-4,-2],[-4,-1],[-4,0],[-4,1],
+                    [-3,-4],[-3,-3],[-3,-2],[-3,-1],[-3,0],[-3,1],
+                    [-4,3],[-4,4],[-3,3],[-3,4],[-2,3],[-2,4],[-1,3],[-1,4],[0,3],[0,4],[1,3],[1,4],
+                    [3,-1],[3,0],[3,1],[3,2],[3,3],[3,4],[4,-1],[4,0],[4,1],[4,2],[4,3],[4,4],
+                    [-1,-4],[-1,-3],[0,-4],[0,-3],[1,-4],[1,-3],[2,-4],[2,-3],[3,-4],[3,-3],[4,-4],[4,-3]
+                ]
+            },
+            {
+                id: 'pentadecathlon',
+                name: 'Pentadecathlon',
+                icon: '⚡',
+                category: 'oscillators',
+                accent: 'indigo',
+                desc: 'Period-15 oscillator that beats like a steady cosmic heart.',
+                cells: [
+                    [-4,0],[-3,0],[-2,-1],[-2,1],[-1,0],[0,0],[1,0],[2,0],[3,-1],[3,1],[4,0],[5,0]
+                ]
+            },
+            {
+                id: 'figure_eight',
+                name: 'Figure-Eight Infinity',
+                icon: '♾️',
+                category: 'oscillators',
+                accent: 'indigo',
+                desc: 'Period-8 twin-block oscillator weaving a continuous infinity loop.',
+                cells: [
+                    [-3,-3],[-3,-2],[-3,-1],[-2,-3],[-2,-2],[-2,-1],[-1,-3],[-1,-2],[-1,-1],
+                    [0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]
+                ]
+            },
+            {
+                id: 'sacred_mandala',
+                name: 'Sacred Symmetry Mandala',
+                icon: '🪷',
+                category: 'oscillators',
+                accent: 'purple',
+                desc: 'Four-fold symmetric crystal that blooms into intricate geometric lace.',
+                cells: [
+                    [-2,-2],[-2,-1],[-2,0],[-2,1],[-2,2],
+                    [-1,-2],[-1,2],[0,-2],[0,2],[1,-2],[1,2],
+                    [2,-2],[2,-1],[2,0],[2,1],[2,2],
+                    [-4,0],[4,0],[0,-4],[0,4]
+                ]
+            },
+            {
+                id: 'r_pentomino',
+                name: 'R-Pentomino (Chaos Seed)',
+                icon: '🔥',
+                category: 'chaos',
+                accent: 'emerald',
+                desc: 'Just 5 cells that erupt into 1,103 generations of unpredictable life.',
+                cells: [
+                    [-1,0],[-1,1],[0,-1],[0,0],[1,0]
+                ]
+            },
+            {
+                id: 'acorn',
+                name: 'Acorn Methuselah',
+                icon: '🌱',
+                category: 'chaos',
+                accent: 'emerald',
+                desc: '7 tiny cells that grow into a sprawling ecosystem over 5,206 steps.',
+                cells: [
+                    [-1,-2],[0,0],[1,-3],[1,-2],[1,1],[1,2],[1,3]
+                ]
+            },
+            {
+                id: 'b_heptomino',
+                name: 'B-Heptomino Engine',
+                icon: '🌪️',
+                category: 'chaos',
+                accent: 'emerald',
+                desc: 'High-energy 7-cell seed that launches gliders while evolving.',
+                cells: [
+                    [-1,-1],[-1,1],[-1,2],[0,-1],[0,0],[0,1],[1,0]
+                ]
+            },
+            {
+                id: 'diehard',
+                name: 'Diehard Vanisher',
+                icon: '⏳',
+                category: 'chaos',
+                accent: 'emerald',
+                desc: '7 cells that dance for 130 generations before vanishing without a trace.',
+                cells: [
+                    [-1,3],[0,-3],[0,-2],[1,-2],[1,2],[1,3],[1,4]
+                ]
+            },
+            {
+                id: 'random',
+                name: 'Primordial Quantum Soup',
+                icon: '🎲',
+                category: 'chaos',
+                accent: 'emerald',
+                desc: 'Fills the grid with randomized life and rare golden catalysts.',
+                isRandom: true,
+                cells: [
+                    [-2,-2],[-2,0],[-2,2],[-1,-1],[-1,1],[0,-2],[0,2],[1,-1],[1,1],[2,-2],[2,0],[2,2]
+                ],
+                catalysts: [[0,0]]
+            }
+        ];
+
+        function renderPatternThumbnail(pattern) {
+            const c = document.createElement('canvas');
+            c.width = 96;
+            c.height = 96;
+            const tCtx = c.getContext('2d');
+
+            tCtx.fillStyle = '#070b14';
+            tCtx.fillRect(0, 0, 96, 96);
+
+            // Subtle mini-grid
+            tCtx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
+            tCtx.lineWidth = 1;
+            for (let i = 12; i < 96; i += 12) {
+                tCtx.beginPath(); tCtx.moveTo(i, 0); tCtx.lineTo(i, 96); tCtx.stroke();
+                tCtx.beginPath(); tCtx.moveTo(0, i); tCtx.lineTo(96, i); tCtx.stroke();
+            }
+
+            const allPts = [...(pattern.cells || []), ...(pattern.catalysts || [])];
+            if (allPts.length === 0) return c;
+
+            let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+            allPts.forEach(([r, col]) => {
+                if (r < minR) minR = r;
+                if (r > maxR) maxR = r;
+                if (col < minC) minC = col;
+                if (col > maxC) maxC = col;
+            });
+
+            const spanR = Math.max(1, maxR - minR + 1);
+            const spanC = Math.max(1, maxC - minC + 1);
+            const maxSpan = Math.max(spanR, spanC, 7);
+            const boxSize = Math.max(3, Math.min(11, Math.floor(72 / maxSpan)));
+
+            const startX = Math.floor((96 - spanC * boxSize) / 2);
+            const startY = Math.floor((96 - spanR * boxSize) / 2);
+
+            // Draw regular cells
+            (pattern.cells || []).forEach(([r, col]) => {
+                const x = startX + (col - minC) * boxSize;
+                const y = startY + (r - minR) * boxSize;
+                tCtx.fillStyle = pattern.accent === 'purple' ? '#a855f7' : (pattern.accent === 'emerald' ? '#10b981' : '#38bdf8');
+                tCtx.fillRect(x + 0.5, y + 0.5, Math.max(2, boxSize - 1), Math.max(2, boxSize - 1));
+            });
+
+            // Draw golden catalysts
+            (pattern.catalysts || []).forEach(([r, col]) => {
+                const x = startX + (col - minC) * boxSize;
+                const y = startY + (r - minR) * boxSize;
+                tCtx.fillStyle = '#f59e0b';
+                tCtx.fillRect(x + 0.5, y + 0.5, Math.max(2, boxSize - 1), Math.max(2, boxSize - 1));
+            });
+
+            return c;
         }
 
-        function getPinchCenter(touches) {
-            const rect = canvas.getBoundingClientRect();
-            return {
-                x: ((touches[0].clientX + touches[1].clientX) / 2) - rect.left,
-                y: ((touches[0].clientY + touches[1].clientY) / 2) - rect.top
-            };
+        function buildPatternGallery(filterCategory = 'all') {
+            const container = document.getElementById('pattern-grid');
+            container.innerHTML = '';
+
+            const filtered = filterCategory === 'all'
+                ? PATTERN_CATALOG
+                : PATTERN_CATALOG.filter(p => p.category === filterCategory);
+
+            filtered.forEach(pattern => {
+                const card = document.createElement('button');
+                card.className = 'pattern-card group text-left p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-slate-800/80 transition flex items-center gap-3.5 active:scale-[0.98]';
+
+                const thumbWrap = document.createElement('div');
+                thumbWrap.className = 'w-16 h-16 rounded-xl overflow-hidden border border-slate-300/60 dark:border-slate-700/80 shrink-0 shadow-inner bg-[#070b14]';
+                const thumbCanvas = renderPatternThumbnail(pattern);
+                thumbCanvas.className = 'w-full h-full object-cover';
+                thumbWrap.appendChild(thumbCanvas);
+
+                const info = document.createElement('div');
+                info.className = 'min-w-0 flex-1';
+                info.innerHTML = `
+                    <div class="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate mb-0.5">
+                        ${pattern.icon} ${pattern.name}
+                    </div>
+                    <p class="text-[11px] leading-snug text-slate-600 dark:text-slate-400 line-clamp-2">
+                        ${pattern.desc}
+                    </p>
+                `;
+
+                card.appendChild(thumbWrap);
+                card.appendChild(info);
+
+                card.addEventListener('click', () => {
+                    loadPattern(pattern.id);
+                    modalLib.classList.add('hidden');
+                    showToast(`Loaded: ${pattern.name}`);
+                });
+
+                container.appendChild(card);
+            });
         }
 
-        function zoomAt(cx, cy, factor) {
-            const newSize = Math.max(4, Math.min(48, cellSize * factor));
-            const actualFactor = newSize / cellSize;
-            offsetX = cx - (cx - offsetX) * actualFactor;
-            offsetY = cy - (cy - offsetY) * actualFactor;
-            cellSize = newSize;
-            document.getElementById('btn-zoom-reset').textContent = Math.round((cellSize / 14) * 100) + '%';
-        }
-
-        // --- MÖNSTERBIBLIOTEK ---
-        const PATTERNS = {
-            symmetric_bloom: [
-                [-6,-6],[-6,-5],[-5,-6],[-5,-5], [-6,-1],[-6,0],[-6,1], [-6,5],[-6,6],[-5,5],[-5,6],
-                [-2,-10],[-2,-9],[-1,-11],[-1,-8],[0,-12],[0,-7],[1,-10],[1,-6],[2,-9],[2,-6],[3,-8],
-                [-2,9],[-2,10],[-1,8],[-1,11],[0,7],[0,12],[1,6],[1,10],[2,6],[2,9],[3,8],
-                [0,-4],[0,-3],[1,-4],[1,-2],[2,-3],[3,-2],[4,-3],[4,-2],[5,-4],[5,-1],[6,-3],[6,-2],
-                [0,3],[0,4],[1,2],[1,4],[2,3],[3,2],[4,2],[4,3],[5,1],[5,4],[6,2],[6,3]
-            ],
-            gosper_gun: [
-                [0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
-                [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
-                [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
-                [7,11],[7,15],[8,12],[8,13]
-            ],
-            pulsar: [
-                [-6,-4],[-6,-3],[-6,-2],[-6,2],[-6,3],[-6,4],
-                [-4,-6],[-3,-6],[-2,-6],[-4,-1],[-3,-1],[-2,-1],[-4,1],[-3,1],[-2,1],[-4,6],[-3,6],[-2,6],
-                [-1,-4],[-1,-3],[-1,-2],[-1,2],[-1,3],[-1,4],
-                [1,-4],[1,-3],[1,-2],[1,2],[1,3],[1,4],
-                [2,-6],[3,-6],[4,-6],[2,-1],[3,-1],[4,-1],[2,1],[3,1],[4,1],[2,6],[3,6],[4,6],
-                [6,-4],[6,-3],[6,-2],[6,2],[6,3],[6,4]
-            ],
-            r_pentomino: [
-                [-1,0],[-1,1],[0,-1],[0,0],[1,0]
-            ],
-            spaceship_fleet: [
-                [-8,-10],[-8,-7],[-7,-11],[-6,-11],[-6,-7],[-5,-11],[-5,-10],[-5,-9],[-5,-8],
-                [0,-5],[0,-2],[1,-6],[2,-6],[2,-2],[3,-6],[3,-5],[3,-4],[3,-3],
-                [8,0],[8,3],[9,-1],[10,-1],[10,3],[11,-1],[11,0],[11,1],[11,2]
-            ],
-            pentadecathlon: [
-                [-4,0],[-3,0],[-2,-1],[-2,1],[-1,0],[0,0],[1,0],[2,0],[3,-1],[3,1],[4,0],[5,0]
-            ],
-            acorn: [
-                [-1,-2],[0,0],[1,-3],[1,-2],[1,1],[1,2],[1,3]
-            ],
-            diehard: [
-                [-1,3],[0,-3],[0,-2],[1,-2],[1,2],[1,3],[1,4]
-            ]
-        };
-
-        function loadPattern(name) {
+        function loadPattern(id) {
             togglePlay(false);
             grid = createEmptyGrid();
             trailGrid = Array.from({ length: ROWS }, () => new Float32Array(COLS));
@@ -954,40 +1237,32 @@
 
             const centerR = Math.floor(ROWS / 2);
             const centerC = Math.floor(COLS / 2);
+            const pattern = PATTERN_CATALOG.find(p => p.id === id);
 
-            if (name === 'random') {
+            if (!pattern) return;
+
+            if (pattern.isRandom) {
                 for (let r = 15; r < ROWS - 15; r++) {
                     for (let c = 15; c < COLS - 15; c++) {
                         if (Math.random() < 0.24) {
-                            grid[r][c] = Math.random() < 0.015 ? -1 : 1; // 1.5% chans för katalysator
+                            grid[r][c] = Math.random() < 0.015 ? -1 : 1;
                         }
                     }
                 }
-            } else if (name === 'quantum_reactor') {
-                // Placera en symmetrisk kärna med odödliga katalysatorer (-1) och levande celler (1)
-                const catalysts = [[-3,-3],[-3,3],[3,-3],[3,3],[0,0]];
-                catalysts.forEach(([dr, dc]) => {
-                    grid[centerR + dr][centerC + dc] = -1;
-                });
-                for (let dr = -5; dr <= 5; dr++) {
-                    for (let dc = -5; dc <= 5; dc++) {
-                        if (Math.abs(dr) === 5 || Math.abs(dc) === 5 || (Math.abs(dr) === 1 && Math.abs(dc) === 1)) {
-                            if (grid[centerR + dr][centerC + dc] === 0) {
-                                grid[centerR + dr][centerC + dc] = 1;
-                            }
-                        }
-                    }
-                }
-            } else if (PATTERNS[name]) {
-                const coords = PATTERNS[name];
-                // Centrera mönstret
-                const offsetC = name === 'gosper_gun' ? -18 : 0;
-                const offsetR = name === 'gosper_gun' ? -5 : 0;
-                coords.forEach(([dr, dc]) => {
-                    const r = centerR + dr + offsetR;
-                    const c = centerC + dc + offsetC;
+            } else {
+                const [offR, offC] = pattern.offset || [0, 0];
+                (pattern.cells || []).forEach(([dr, dc]) => {
+                    const r = centerR + dr + offR;
+                    const c = centerC + dc + offC;
                     if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
                         grid[r][c] = 1;
+                    }
+                });
+                (pattern.catalysts || []).forEach(([dr, dc]) => {
+                    const r = centerR + dr + offR;
+                    const c = centerC + dc + offC;
+                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                        grid[r][c] = -1;
                     }
                 });
             }
@@ -1093,11 +1368,16 @@
             });
         });
 
-        document.querySelectorAll('.pattern-card').forEach(card => {
-            card.addEventListener('click', () => {
-                loadPattern(card.dataset.pattern);
-                modalLib.classList.add('hidden');
-                showToast('Pattern loaded');
+        // Kategori-flikar i mönsterbiblioteket
+        document.querySelectorAll('.cat-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('.cat-pill').forEach(p => {
+                    p.classList.remove('active', 'bg-blue-600', 'text-white');
+                    p.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                });
+                pill.classList.add('active', 'bg-blue-600', 'text-white');
+                pill.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                buildPatternGallery(pill.dataset.cat);
             });
         });
 
@@ -1213,6 +1493,7 @@
         window.addEventListener('resize', resizeCanvas);
         window.onload = () => {
             generateHomeScreenIcon();
+            buildPatternGallery('all');
             resizeCanvas();
             // Starta med helt tom spelplan
             grid = createEmptyGrid();
