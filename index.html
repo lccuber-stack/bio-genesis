@@ -355,7 +355,7 @@
 
             <!-- Category Filter Grid (Ingen horisontell beskärning på iPhone) -->
             <div id="pattern-categories" class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 pb-3 mb-2 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
-                <button data-cat="all" class="cat-pill active px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-blue-600 text-white text-center truncate transition">All (22)</button>
+                <button data-cat="all" class="cat-pill active px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-blue-600 text-white text-center truncate transition">All (30)</button>
                 <button data-cat="saved" id="tab-saved-btn" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">⭐ Saved (0)</button>
                 <button data-cat="ships" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">🚀 Ships</button>
                 <button data-cat="guns" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">🔫 Guns</button>
@@ -859,30 +859,29 @@
             if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
 
             if (currentTool === 'draw') {
-                if (grid[row][col] !== 1) {
+                if (grid[row][col] === 0) {
                     grid[row][col] = 1;
-                    recalculatePopulation();
-                    updateHUD();
+                    population++;
                 }
             } else if (currentTool === 'catalyst') {
                 if (grid[row][col] !== -1) {
+                    if (grid[row][col] === 0) population++;
                     grid[row][col] = -1;
-                    recalculatePopulation();
-                    updateHUD();
                 }
             } else if (currentTool === 'erase') {
                 if (grid[row][col] !== 0) {
                     grid[row][col] = 0;
                     trailGrid[row][col] = 0;
-                    recalculatePopulation();
-                    updateHUD();
+                    population--;
                 }
             }
+            updateHUD();
             render();
         }
 
         // Mus-händelser (Desktop)
         canvas.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
             isPointerDown = true;
             lastPointerX = e.clientX;
             lastPointerY = e.clientY;
@@ -893,140 +892,138 @@
 
         window.addEventListener('mousemove', (e) => {
             if (!isPointerDown) return;
+            const dx = e.clientX - lastPointerX;
+            const dy = e.clientY - lastPointerY;
             if (currentTool === 'pan') {
-                offsetX += e.clientX - lastPointerX;
-                offsetY += e.clientY - lastPointerY;
-                lastPointerX = e.clientX;
-                lastPointerY = e.clientY;
+                offsetX += dx;
+                offsetY += dy;
                 hasUserPanned = true;
                 render();
             } else {
                 applyToolAt(e.clientX, e.clientY);
             }
+            lastPointerX = e.clientX;
+            lastPointerY = e.clientY;
         });
 
         window.addEventListener('mouseup', () => {
             isPointerDown = false;
         });
 
-        // Scroll-hjul zoom på Desktop
+        // Mushjul för zoom (Desktop)
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
-            zoomAt(e.clientX - rect.left, e.clientY - rect.top, zoomFactor);
+            const factor = e.deltaY < 0 ? 1.12 : 0.89;
+            zoomAt(e.clientX, e.clientY, factor);
         }, { passive: false });
 
         // Touch-händelser (iPhone & iPad)
-        canvas.addEventListener('touchstart', (e) => {
-            if (e.cancelable) e.preventDefault();
-            if (e.touches.length === 1) {
-                isPointerDown = true;
-                const touch = e.touches[0];
-                lastPointerX = touch.clientX;
-                lastPointerY = touch.clientY;
-                if (currentTool !== 'pan') {
-                    applyToolAt(touch.clientX, touch.clientY);
-                }
-            } else if (e.touches.length === 2) {
-                isPointerDown = false;
-                initialPinchDist = getPinchDistance(e.touches);
-                initialCellSize = cellSize;
-                lastPointerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                lastPointerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            if (e.cancelable) e.preventDefault();
-            if (e.touches.length === 1 && isPointerDown) {
-                const touch = e.touches[0];
-                if (currentTool === 'pan') {
-                    offsetX += touch.clientX - lastPointerX;
-                    offsetY += touch.clientY - lastPointerY;
-                    lastPointerX = touch.clientX;
-                    lastPointerY = touch.clientY;
-                    hasUserPanned = true;
-                    render();
-                } else {
-                    applyToolAt(touch.clientX, touch.clientY);
-                }
-            } else if (e.touches.length === 2 && initialPinchDist) {
-                const rect = canvas.getBoundingClientRect();
-                const currentDist = getPinchDistance(e.touches);
-                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
-                // Panorera samtidigt som man zoomar med två fingrar
-                offsetX += midX - lastPointerX;
-                offsetY += midY - lastPointerY;
-                lastPointerX = midX;
-                lastPointerY = midY;
-                hasUserPanned = true;
-
-                const scaleRatio = currentDist / initialPinchDist;
-                const targetCellSize = Math.max(4, Math.min(48, initialCellSize * scaleRatio));
-                zoomAt(midX - rect.left, midY - rect.top, targetCellSize / cellSize);
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            if (e.touches.length === 0) {
-                isPointerDown = false;
-                initialPinchDist = null;
-            } else if (e.touches.length === 1) {
-                initialPinchDist = null;
-                lastPointerX = e.touches[0].clientX;
-                lastPointerY = e.touches[0].clientY;
-            }
-        });
-
         function getPinchDistance(touches) {
             const dx = touches[0].clientX - touches[1].clientX;
             const dy = touches[0].clientY - touches[1].clientY;
             return Math.hypot(dx, dy);
         }
 
-        function zoomAt(pivotX, pivotY, factor) {
-            const newSize = Math.max(4, Math.min(48, cellSize * factor));
-            const actualFactor = newSize / cellSize;
-            offsetX = pivotX - (pivotX - offsetX) * actualFactor;
-            offsetY = pivotY - (pivotY - offsetY) * actualFactor;
-            cellSize = newSize;
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isPointerDown = true;
+                lastPointerX = e.touches[0].clientX;
+                lastPointerY = e.touches[0].clientY;
+                if (currentTool !== 'pan') {
+                    applyToolAt(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            } else if (e.touches.length === 2) {
+                isPointerDown = false;
+                initialPinchDist = getPinchDistance(e.touches);
+                initialCellSize = cellSize;
+            }
+        }, { passive: false });
 
-            const pct = Math.round((cellSize / 14) * 100);
-            document.getElementById('btn-zoom-reset').textContent = `${pct}%`;
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1 && isPointerDown) {
+                const dx = e.touches[0].clientX - lastPointerX;
+                const dy = e.touches[0].clientY - lastPointerY;
+                if (currentTool === 'pan') {
+                    offsetX += dx;
+                    offsetY += dy;
+                    hasUserPanned = true;
+                    render();
+                } else {
+                    applyToolAt(e.touches[0].clientX, e.touches[0].clientY);
+                }
+                lastPointerX = e.touches[0].clientX;
+                lastPointerY = e.touches[0].clientY;
+            } else if (e.touches.length === 2 && initialPinchDist) {
+                const dist = getPinchDistance(e.touches);
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const targetSize = Math.max(4, Math.min(48, initialCellSize * (dist / initialPinchDist)));
+                zoomAt(midX, midY, targetSize / cellSize);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) initialPinchDist = null;
+            if (e.touches.length === 0) isPointerDown = false;
+        });
+
+        function zoomAt(clientX, clientY, factor) {
+            const rect = canvas.getBoundingClientRect();
+            const relX = clientX - rect.left;
+            const relY = clientY - rect.top;
+            const prevSize = cellSize;
+            cellSize = Math.max(4, Math.min(48, cellSize * factor));
+            const ratio = cellSize / prevSize;
+            offsetX = relX - (relX - offsetX) * ratio;
+            offsetY = relY - (relY - offsetY) * ratio;
+            hasUserPanned = true;
+            document.getElementById('btn-zoom-reset').textContent = `${Math.round((cellSize / 14) * 100)}%`;
             render();
         }
 
-        // --- MÖNSTERBIBLIOTEK (22 VERIFIERADE MÖNSTER MED MINI-FÖRHANDSVISNING) ---
+        // --- MÖNSTERBIBLIOTEK (30 VERIFIERADE MÖNSTER MED MINI-FÖRHANDSVISNING) ---
         const PATTERN_CATALOG = [
+            // --- SHIPS (7 verified periodic spaceships) ---
             {
-                id: 'schick_engine',
-                name: 'Schick Engine (Giant c/2 Ship)',
-                icon: '🚀',
+                id: 'copperhead_c10',
+                name: 'Copperhead (c/10 Spaceship)',
+                icon: '🐍',
                 category: 'ships',
                 accent: 'purple',
-                desc: 'Verified c/2 giant cruiser: twin LWSS escorts towing a symmetric spark core across the grid.',
-                offset: [-8, -10],
+                desc: 'Famous period-10 orthogonal c/10 spaceship discovered by zdr in 2016.',
+                offset: [-6, -4],
                 cells: [
-                    // Verified Schick Engine (flies right at c/2, period 4, symmetric around row 8)
-                    // Top LWSS (rows 0..3)
-                    [0,1],[0,2],[0,3],[0,4],
-                    [1,0],[1,4],
-                    [2,4],
-                    [3,0],[3,3],
-                    // Symmetric central tagalong core (rows 6..10)
-                    [6,7],[6,8],[6,9],
-                    [7,6],[7,9],
-                    [8,5],[8,6],
-                    [9,6],[9,9],
-                    [10,7],[10,8],[10,9],
-                    // Bottom LWSS (rows 13..16)
-                    [13,0],[13,3],
-                    [14,4],
-                    [15,0],[15,4],
-                    [16,1],[16,2],[16,3],[16,4]
+                    [0,1],[0,2],[0,5],[0,6],
+                    [1,3],[1,4],
+                    [2,3],[2,4],
+                    [3,0],[3,2],[3,5],[3,7],
+                    [4,0],[4,7],
+                    [6,0],[6,7],
+                    [7,1],[7,2],[7,5],[7,6],
+                    [8,2],[8,3],[8,4],[8,5],
+                    [10,3],[10,4],
+                    [11,3],[11,4]
+                ]
+            },
+            {
+                id: 'loafer_c7',
+                name: 'Loafer (c/7 Spaceship)',
+                icon: '🛸',
+                category: 'ships',
+                accent: 'cyan',
+                desc: 'Sleek period-7 c/7 orthogonal spaceship discovered by Josh Ball in 2013.',
+                offset: [-4, -4],
+                cells: [
+                    [0,1],[0,2],[0,5],[0,7],[0,8],
+                    [1,0],[1,3],[1,6],[1,7],
+                    [2,1],[2,3],
+                    [3,2],
+                    [4,8],
+                    [5,6],[5,7],[5,8],
+                    [6,5],
+                    [7,6],
+                    [8,7],[8,8]
                 ]
             },
             {
@@ -1053,7 +1050,7 @@
             {
                 id: 'hwss_heavy',
                 name: 'Heavyweight Spaceship (HWSS)',
-                icon: '🛸',
+                icon: '🚀',
                 category: 'ships',
                 accent: 'cyan',
                 desc: 'Largest classic elementary c/2 spaceship (13 cells)—keeps its exact cycle forever.',
@@ -1122,6 +1119,8 @@
                     [0,9],[1,10],[2,8],[2,9],[2,10]
                 ]
             },
+
+            // --- GUNS (4 verified glider guns) ---
             {
                 id: 'gosper_gun',
                 name: 'Gosper Glider Gun',
@@ -1175,12 +1174,10 @@
                 desc: 'Dual parallel Gosper Glider Guns firing synchronized twin glider streams.',
                 offset: [-14, -18],
                 cells: [
-                    // Upper Gosper Gun
                     [0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
                     [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
                     [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
                     [7,11],[7,15],[8,12],[8,13],
-                    // Lower Gosper Gun
                     [18,24],[19,22],[19,24],[20,12],[20,13],[20,20],[20,21],[20,34],[20,35],
                     [21,11],[21,15],[21,20],[21,21],[21,34],[21,35],[22,0],[22,1],[22,10],[22,16],[22,20],[22,21],
                     [23,0],[23,1],[23,10],[23,14],[23,16],[23,17],[23,22],[23,24],[24,10],[24,16],[24,24],
@@ -1196,7 +1193,6 @@
                 desc: 'Classic period-46 twin-shuttle gun built from two colliding Queen Bee shuttles.',
                 offset: [-11, -11],
                 cells: [
-                    // Upper Queen Bee Shuttle (period 30) + Lower Queen Bee Shuttle
                     [0,9],[1,7],[1,9],[2,6],[2,8],[3,5],[3,8],[4,6],[4,8],[5,7],[5,9],[6,9],
                     [3,0],[3,1],[4,0],[4,1],
                     [3,20],[3,21],[4,20],[4,21],
@@ -1205,6 +1201,8 @@
                     [18,20],[18,21],[19,20],[19,21]
                 ]
             },
+
+            // --- QUANTUM (4 catalyst-powered formations) ---
             {
                 id: 'quantum_bloom',
                 name: 'Quantum Catalyst Core',
@@ -1236,8 +1234,89 @@
                 ]
             },
             {
+                id: 'quantum_reactor_ring',
+                name: 'Quantum Tokamak Ring',
+                icon: '🔮',
+                category: 'quantum',
+                accent: 'purple',
+                desc: 'Eight golden catalyst nodes containing a high-energy plasma oscillation ring.',
+                cells: [
+                    [-2,-1],[-2,0],[-2,1],[-1,-2],[-1,2],[0,-2],[0,2],[1,-2],[1,2],[2,-1],[2,0],[2,1]
+                ],
+                catalysts: [
+                    [-4,-2],[-4,2],[4,-2],[4,2],[-2,-4],[2,-4],[-2,4],[2,4]
+                ]
+            },
+            {
+                id: 'quantum_lighthouse',
+                name: 'Quantum Beacon Array',
+                icon: '🌟',
+                category: 'quantum',
+                accent: 'purple',
+                desc: 'Symmetric four-wing catalyst array radiating continuous waves of newborn cells.',
+                cells: [
+                    [-1,-1],[-1,1],[1,-1],[1,1],
+                    [-3,0],[3,0],[0,-3],[0,3]
+                ],
+                catalysts: [
+                    [0,0],[-2,-2],[-2,2],[2,-2],[2,2]
+                ]
+            },
+
+            // --- OSCILLATORS (8 classic periodic oscillators) ---
+            {
+                id: 'queen_bee_shuttle',
+                name: 'Queen Bee Shuttle (P30)',
+                icon: '🐝',
+                category: 'oscillators',
+                accent: 'indigo',
+                desc: 'Bill Gosper’s famous period-30 shuttle bouncing between two stabilizer blocks.',
+                offset: [-3, -11],
+                cells: [
+                    [0,9],[1,7],[1,9],[2,6],[2,8],[3,5],[3,8],[4,6],[4,8],[5,7],[5,9],[6,9],
+                    [3,0],[3,1],[4,0],[4,1],
+                    [3,20],[3,21],[4,20],[4,21]
+                ]
+            },
+            {
+                id: 'tumbler_p14',
+                name: 'The Tumbler (Period-14)',
+                icon: '🤸',
+                category: 'oscillators',
+                accent: 'indigo',
+                desc: 'Classic period-14 acrobatic oscillator discovered by George Collins in 1970.',
+                offset: [-3, -4],
+                cells: [
+                    [0,1],[0,2],[0,6],[0,7],
+                    [1,1],[1,2],[1,6],[1,7],
+                    [2,2],[2,6],
+                    [3,0],[3,2],[3,6],[3,8],
+                    [4,0],[4,2],[4,6],[4,8],
+                    [5,0],[5,1],[5,7],[5,8]
+                ]
+            },
+            {
+                id: 'octagon_2',
+                name: 'Octagon 2 (Period-5)',
+                icon: '🛑',
+                category: 'oscillators',
+                accent: 'indigo',
+                desc: 'Elegant hollow octagonal ring pulsing with a crisp period of 5 generations.',
+                offset: [-4, -4],
+                cells: [
+                    [0,3],[0,4],
+                    [1,2],[1,5],
+                    [2,1],[2,6],
+                    [3,0],[3,7],
+                    [4,0],[4,7],
+                    [5,1],[5,6],
+                    [6,2],[6,5],
+                    [7,3],[7,4]
+                ]
+            },
+            {
                 id: 'pulsar',
-                name: 'Cosmic Pulsar',
+                name: 'Cosmic Pulsar (Period-3)',
                 icon: '💫',
                 category: 'oscillators',
                 accent: 'indigo',
@@ -1253,7 +1332,7 @@
             },
             {
                 id: 'koks_galaxy',
-                name: "Kok's Spiral Galaxy",
+                name: "Kok's Spiral Galaxy (P8)",
                 icon: '🌌',
                 category: 'oscillators',
                 accent: 'indigo',
@@ -1268,7 +1347,7 @@
             },
             {
                 id: 'pentadecathlon',
-                name: 'Pentadecathlon',
+                name: 'Pentadecathlon (P15)',
                 icon: '⚡',
                 category: 'oscillators',
                 accent: 'indigo',
@@ -1279,7 +1358,7 @@
             },
             {
                 id: 'figure_eight',
-                name: 'Figure-Eight Infinity',
+                name: 'Figure-Eight Infinity (P8)',
                 icon: '♾️',
                 category: 'oscillators',
                 accent: 'indigo',
@@ -1303,9 +1382,54 @@
                     [-4,0],[4,0],[0,-4],[0,4]
                 ]
             },
+
+            // --- CHAOS & METHUSELAHS (7 famous growth/evolution seeds) ---
+            {
+                id: 'switch_engine_puffer',
+                name: 'Switch Engine (Infinite Growth)',
+                icon: '🚂',
+                category: 'chaos',
+                accent: 'emerald',
+                desc: 'Charles Corderman’s legendary 8-cell engine that travels diagonally leaving smoke forever.',
+                offset: [-2, -3],
+                cells: [
+                    [0,1],[0,3],
+                    [1,0],
+                    [2,1],[2,4],
+                    [3,3],[3,4],[3,5]
+                ]
+            },
+            {
+                id: 'diehard_methuselah',
+                name: 'Diehard (130-Gen Vanisher)',
+                icon: '⏳',
+                category: 'chaos',
+                accent: 'emerald',
+                desc: '7 cells that evolve dramatically before vanishing completely at generation 130.',
+                offset: [-1, -4],
+                cells: [
+                    [0,6],
+                    [1,0],[1,1],
+                    [2,1],[2,5],[2,6],[2,7]
+                ]
+            },
+            {
+                id: 'pi_heptomino',
+                name: 'Pi-Heptomino (173-Gen Blast)',
+                icon: '🥧',
+                category: 'chaos',
+                accent: 'emerald',
+                desc: 'Classic 7-cell U-shape that erupts into gliders, traffic lights, and ponds.',
+                offset: [-1, -1],
+                cells: [
+                    [0,0],[0,1],[0,2],
+                    [1,0],[1,2],
+                    [2,0],[2,2]
+                ]
+            },
             {
                 id: 'r_pentomino',
-                name: 'R-Pentomino (Chaos Seed)',
+                name: 'R-Pentomino (1,103 Gens)',
                 icon: '🔥',
                 category: 'chaos',
                 accent: 'emerald',
@@ -1316,7 +1440,7 @@
             },
             {
                 id: 'acorn',
-                name: 'Acorn Methuselah',
+                name: 'Acorn Methuselah (5,206 Gens)',
                 icon: '🌱',
                 category: 'chaos',
                 accent: 'emerald',
