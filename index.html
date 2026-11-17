@@ -245,8 +245,8 @@
                 <div class="flex items-start gap-3">
                     <div class="w-7 h-7 rounded-lg bg-purple-600/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">3</div>
                     <div class="text-xs text-slate-700 dark:text-slate-300">
-                        <strong class="text-slate-900 dark:text-white block">Explore & Zoom</strong>
-                        Pinch with two fingers (or scroll) to zoom. Open the <span class="font-semibold">folder</span> to load classic patterns.
+                        <strong class="text-slate-900 dark:text-white block">Pan, Zoom & Patterns</strong>
+                        Pinch or drag with two fingers (or right-click drag &amp; scroll on desktop) to pan and zoom. Open the <span class="font-semibold">folder</span> to load classic patterns.
                     </div>
                 </div>
             </div>
@@ -277,10 +277,6 @@
             </button>
             <button data-tool="catalyst" class="tool-btn text-amber-500 p-2.5 rounded-xl transition active:scale-90" title="Quantum Catalyst (Immortal Energy Node)">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-            </button>
-            <div class="h-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
-            <button data-tool="pan" class="tool-btn text-slate-600 dark:text-slate-300 p-2.5 rounded-xl transition active:scale-90" title="Pan & Move View">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
             </button>
             <div class="h-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
             <button id="btn-quick-save" class="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 p-2.5 rounded-xl transition active:scale-90" title="Save Current Design">
@@ -764,7 +760,7 @@
         let quantumMode = true;
         let wrapEdges = true;
         let soundEnabled = false;
-        let activeTool = 'draw'; // 'draw' | 'erase' | 'catalyst' | 'pan'
+        let activeTool = 'draw'; // 'draw' | 'erase' | 'catalyst'
         let currentCategory = 'all';
         let currentRule = 'B3/S23';
         let birthRules = new Set([3]);
@@ -1144,6 +1140,7 @@
         let panStartX = 0;
         let panStartY = 0;
         let lastPaintedKey = '';
+        let strokeDrawValue = null; // 1 = paint cells, 0 = erase cells during current stroke
         let initialPinchDist = null;
         let initialPinchCellSize = DEFAULT_CELL_SIZE;
 
@@ -1155,7 +1152,7 @@
             return { r, c };
         }
 
-        function applyToolAt(clientX, clientY) {
+        function applyToolAt(clientX, clientY, isStrokeStart = false) {
             const cell = screenToCell(clientX, clientY);
             if (!cell) return;
             const key = `${cell.r},${cell.c}`;
@@ -1166,12 +1163,15 @@
             const prev = grid[cell.r][cell.c];
 
             if (activeTool === 'draw') {
-                if (prev !== 1) {
-                    grid[cell.r][cell.c] = 1;
+                if (isStrokeStart || strokeDrawValue === null) {
+                    strokeDrawValue = prev !== 0 ? 0 : 1;
+                }
+                if (prev !== strokeDrawValue) {
+                    grid[cell.r][cell.c] = strokeDrawValue;
                     trailGrid[cell.r][cell.c] = 0;
                     population = countPopulation(grid);
                     updateHUD();
-                    playBirthNote(0.7);
+                    if (strokeDrawValue === 1) playBirthNote(0.7);
                     render();
                 }
             } else if (activeTool === 'erase') {
@@ -1183,12 +1183,15 @@
                     render();
                 }
             } else if (activeTool === 'catalyst') {
-                if (prev !== -1) {
-                    grid[cell.r][cell.c] = -1;
+                if (isStrokeStart || strokeDrawValue === null) {
+                    strokeDrawValue = prev === -1 ? 0 : -1;
+                }
+                if (prev !== strokeDrawValue) {
+                    grid[cell.r][cell.c] = strokeDrawValue;
                     trailGrid[cell.r][cell.c] = 0;
                     population = countPopulation(grid);
                     updateHUD();
-                    playBirthNote(1.3);
+                    if (strokeDrawValue === -1) playBirthNote(1.3);
                     render();
                 }
             }
@@ -1222,7 +1225,7 @@
         });
 
         canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 1 || e.button === 2 || activeTool === 'pan') {
+            if (e.button === 1 || e.button === 2) {
                 e.preventDefault();
                 isPanning = true;
                 panStartX = e.clientX - cameraX;
@@ -1231,8 +1234,9 @@
             }
             isPointerDown = true;
             lastPaintedKey = '';
+            strokeDrawValue = null;
             pushHistory();
-            applyToolAt(e.clientX, e.clientY);
+            applyToolAt(e.clientX, e.clientY, true);
         });
 
         window.addEventListener('mousemove', (e) => {
@@ -1254,6 +1258,7 @@
             isPointerDown = false;
             isPanning = false;
             lastPaintedKey = '';
+            strokeDrawValue = null;
         });
 
         canvas.addEventListener('wheel', (e) => {
@@ -1276,16 +1281,11 @@
             }
             if (e.touches.length === 1) {
                 const t = e.touches[0];
-                if (activeTool === 'pan') {
-                    isPanning = true;
-                    panStartX = t.clientX - cameraX;
-                    panStartY = t.clientY - cameraY;
-                } else {
-                    isPointerDown = true;
-                    lastPaintedKey = '';
-                    pushHistory();
-                    applyToolAt(t.clientX, t.clientY);
-                }
+                isPointerDown = true;
+                lastPaintedKey = '';
+                strokeDrawValue = null;
+                pushHistory();
+                applyToolAt(t.clientX, t.clientY, true);
             }
         }, { passive: true });
 
@@ -1323,6 +1323,7 @@
             isPanning = false;
             initialPinchDist = null;
             lastPaintedKey = '';
+            strokeDrawValue = null;
         });
 
         // --- VERIFIED 30-PATTERN CATALOG ---
@@ -2318,19 +2319,33 @@
         const welcomeScreen = document.getElementById('welcome-screen');
         const chkShowWelcome = document.getElementById('chk-show-welcome');
 
-        function dismissWelcomeScreen() {
+        function dismissWelcomeScreen(startEmpty = false) {
             localStorage.setItem(WELCOME_PREF_KEY, chkShowWelcome.checked ? 'true' : 'false');
             welcomeScreen.classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => welcomeScreen.classList.add('hidden'), 300);
-            if (population === 0) {
+
+            if (startEmpty) {
+                if (population > 0 || generation > 0) {
+                    pushHistory();
+                }
+                setRunningState(false);
+                grid = createEmptyGrid();
+                initialDesignSnapshot = null;
+                generation = 0;
+                population = 0;
+                updateHUD();
+                updateRewindButton();
+                centerCamera();
+                showToast('Grid is ready — draw your first cells!', true);
+            } else if (population === 0) {
                 showToast('Grid is ready — draw your first cells!', true);
             }
             showInstallPromptIfEligible();
         }
 
-        document.getElementById('btn-start-game').addEventListener('click', dismissWelcomeScreen);
+        document.getElementById('btn-start-game').addEventListener('click', () => dismissWelcomeScreen(true));
         welcomeScreen.addEventListener('click', (e) => {
-            if (e.target === welcomeScreen) dismissWelcomeScreen();
+            if (e.target === welcomeScreen) dismissWelcomeScreen(false);
         });
         document.getElementById('btn-help').addEventListener('click', () => {
             setRunningState(false);
