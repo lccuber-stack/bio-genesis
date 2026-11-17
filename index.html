@@ -283,7 +283,10 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
             </button>
             <div class="h-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
-            <button id="btn-quick-save" class="text-amber-500 hover:bg-amber-500/15 p-2.5 rounded-xl transition active:scale-90" title="Save Current Design">
+            <button id="btn-quick-save" class="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 p-2.5 rounded-xl transition active:scale-90" title="Save Current Design">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h9l3 3v13a2 2 0 01-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 21v-6h6v6M9 3v4h5"/></svg>
+            </button>
+            <button id="btn-open-saved" class="text-amber-500 hover:bg-amber-500/15 p-2.5 rounded-xl transition active:scale-90" title="Open Saved Designs">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             </button>
             <button id="btn-quick-share" class="text-sky-500 hover:bg-sky-500/15 p-2.5 rounded-xl transition active:scale-90" title="Share Current Design">
@@ -319,9 +322,14 @@
             </button>
 
             <!-- Mitten: Huvudkontroller -->
-            <div class="pointer-events-auto hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-full px-3 py-2 flex items-center gap-3 sm:gap-4">
+            <div class="pointer-events-auto hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-full px-2.5 sm:px-3 py-2 flex items-center gap-2 sm:gap-3.5">
+                <!-- Spola tillbaka till originaldesign (Gen 0) -->
+                <button id="btn-rewind-origin" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-amber-500/50 dark:border-amber-400/50 flex items-center justify-center text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 active:scale-90 transition disabled:opacity-30" title="Rewind to Original Design (Gen 0)" disabled>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+                </button>
+
                 <!-- Stega bakåt (Historik!) -->
-                <button id="btn-step-back" class="w-11 h-11 rounded-full border border-blue-500/50 dark:border-blue-400/50 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition disabled:opacity-30" title="Step Backward in Time (Left Arrow)">
+                <button id="btn-step-back" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-blue-500/50 dark:border-blue-400/50 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition disabled:opacity-30" title="Step Backward in Time (Left Arrow)">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 </button>
 
@@ -332,7 +340,7 @@
                 </button>
 
                 <!-- Stega framåt -->
-                <button id="btn-step-forward" class="w-11 h-11 rounded-full border border-blue-500/50 dark:border-blue-400/50 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition" title="Next Generation (Right Arrow)">
+                <button id="btn-step-forward" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-blue-500/50 dark:border-blue-400/50 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition" title="Next Generation (Right Arrow)">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </button>
             </div>
@@ -442,8 +450,8 @@
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-4 sm:p-5 shadow-2xl transform transition-all">
             <div class="flex items-center justify-between mb-2.5">
                 <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <span class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h9l3 3v13a2 2 0 01-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 21v-6h6v6M9 3v4h5"/></svg>
                     </span>
                     <h2 class="text-lg font-bold">Save Creation</h2>
                 </div>
@@ -749,6 +757,7 @@
         let grid = [];
         let trailGrid = [];
         let historyStack = [];
+        let initialDesignSnapshot = null;
         let generation = 0;
         let population = 0;
         let isRunning = false;
@@ -835,6 +844,25 @@
             return src.map(row => new Int16Array(row));
         }
 
+        function captureInitialSnapshot() {
+            const pop = countPopulation(grid);
+            if (pop === 0) {
+                initialDesignSnapshot = null;
+            } else {
+                initialDesignSnapshot = {
+                    grid: cloneGrid(grid),
+                    population: pop
+                };
+            }
+            updateRewindButton();
+        }
+
+        function updateRewindButton() {
+            const btn = document.getElementById('btn-rewind-origin');
+            if (!btn) return;
+            btn.disabled = !initialDesignSnapshot || generation === 0;
+        }
+
         function pushHistory() {
             historyStack.push({
                 grid: cloneGrid(grid),
@@ -869,6 +897,9 @@
 
         // --- SIMULATION STEP ENGINE ---
         function stepSimulation(fromManual = false) {
+            if (generation === 0 && population > 0) {
+                captureInitialSnapshot();
+            }
             if (!fromManual) pushHistory();
 
             const nextGrid = Array.from({ length: GRID_SIZE }, () => new Int16Array(GRID_SIZE));
@@ -939,6 +970,7 @@
             generation++;
             population = newPop;
             updateHUD();
+            updateRewindButton();
 
             if (births > 0) playBirthNote(Math.min(4, births / 3));
 
@@ -1174,8 +1206,13 @@
             return Math.hypot(dx, dy);
         }
 
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
         canvas.addEventListener('mousedown', (e) => {
             if (e.button === 1 || e.button === 2 || activeTool === 'pan') {
+                e.preventDefault();
                 isPanning = true;
                 panStartX = e.clientX - cameraX;
                 panStartY = e.clientY - cameraY;
@@ -1200,6 +1237,9 @@
         });
 
         window.addEventListener('mouseup', () => {
+            if (isPointerDown && generation === 0) {
+                captureInitialSnapshot();
+            }
             isPointerDown = false;
             isPanning = false;
             lastPaintedKey = '';
@@ -1265,6 +1305,9 @@
         }, { passive: true });
 
         canvas.addEventListener('touchend', () => {
+            if (isPointerDown && generation === 0) {
+                captureInitialSnapshot();
+            }
             isPointerDown = false;
             isPanning = false;
             initialPinchDist = null;
@@ -1653,6 +1696,7 @@
 
             generation = 0;
             population = countPopulation(grid);
+            captureInitialSnapshot();
             setRunningState(false);
             updateHUD();
             centerCamera();
@@ -1871,6 +1915,46 @@
                     const actions = document.createElement('div');
                     actions.className = 'flex items-center gap-1 shrink-0';
 
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 transition';
+                    editBtn.title = 'Rename Design';
+                    editBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`;
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        info.innerHTML = '';
+                        const renameInput = document.createElement('input');
+                        renameInput.type = 'text';
+                        renameInput.maxLength = 32;
+                        renameInput.value = item.name;
+                        renameInput.className = 'w-full bg-white dark:bg-slate-900 border border-amber-500 rounded-lg px-2 py-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none';
+                        renameInput.addEventListener('click', (ev) => ev.stopPropagation());
+
+                        const commitRename = () => {
+                            const nextName = renameInput.value.trim();
+                            if (nextName && nextName !== item.name) {
+                                const list = getSavedDesigns().map(d => d.id === item.id ? { ...d, name: nextName } : d);
+                                setSavedDesigns(list);
+                                showToast(`Renamed to "${nextName}"`);
+                            }
+                            renderPatternCards();
+                        };
+
+                        renameInput.addEventListener('keydown', (ev) => {
+                            if (ev.key === 'Enter') {
+                                ev.preventDefault();
+                                commitRename();
+                            } else if (ev.key === 'Escape') {
+                                ev.preventDefault();
+                                renderPatternCards();
+                            }
+                        });
+                        renameInput.addEventListener('blur', commitRename);
+
+                        info.appendChild(renameInput);
+                        renameInput.focus();
+                        renameInput.select();
+                    });
+
                     const shareBtn = document.createElement('button');
                     shareBtn.className = 'p-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 transition';
                     shareBtn.title = 'Share Design';
@@ -1892,6 +1976,7 @@
                         showToast('Design deleted');
                     });
 
+                    actions.appendChild(editBtn);
                     actions.appendChild(shareBtn);
                     actions.appendChild(delBtn);
                     card.appendChild(actions);
@@ -1950,7 +2035,23 @@
             trailGrid = Array.from({ length: GRID_SIZE }, () => new Float32Array(GRID_SIZE));
             updateHUD();
             updateStepBackButton();
+            updateRewindButton();
             render();
+        });
+
+        // Rewind to Original Design (Gen 0)
+        document.getElementById('btn-rewind-origin').addEventListener('click', () => {
+            if (!initialDesignSnapshot) return;
+            setRunningState(false);
+            pushHistory();
+            grid = cloneGrid(initialDesignSnapshot.grid);
+            trailGrid = Array.from({ length: GRID_SIZE }, () => new Float32Array(GRID_SIZE));
+            generation = 0;
+            population = initialDesignSnapshot.population;
+            updateHUD();
+            updateRewindButton();
+            render();
+            showToast('Rewound to original design (Gen 0)');
         });
 
         // Quantum Toggle
@@ -2026,9 +2127,11 @@
             pushHistory();
             setRunningState(false);
             grid = createEmptyGrid();
+            initialDesignSnapshot = null;
             generation = 0;
             population = 0;
             updateHUD();
+            updateRewindButton();
             render();
             showToast('Grid cleared');
         }
@@ -2109,23 +2212,37 @@
             showToast(`⭐ Saved "${design.name}"!`);
         });
 
-        // Pattern Library Modal & Categories
-        document.getElementById('btn-library').addEventListener('click', () => {
+        function selectLibraryCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-pill').forEach(p => {
+                const isSelected = p.dataset.cat === cat;
+                p.classList.toggle('active', isSelected);
+                p.classList.toggle('bg-blue-600', isSelected);
+                p.classList.toggle('text-white', isSelected);
+                p.classList.toggle('bg-slate-100', !isSelected);
+                p.classList.toggle('dark:bg-slate-800', !isSelected);
+                p.classList.toggle('text-slate-600', !isSelected);
+                p.classList.toggle('dark:text-slate-300', !isSelected);
+            });
             updateSavedTabCount();
             renderPatternCards();
+        }
+
+        // Pattern Library Modal & Categories
+        document.getElementById('btn-library').addEventListener('click', () => {
+            selectLibraryCategory(currentCategory);
+            document.getElementById('modal-library').classList.remove('hidden');
+        });
+
+        // Quick-Access Saved Designs Star Button
+        document.getElementById('btn-open-saved').addEventListener('click', () => {
+            selectLibraryCategory('saved');
             document.getElementById('modal-library').classList.remove('hidden');
         });
 
         document.querySelectorAll('.cat-pill').forEach(pill => {
             pill.addEventListener('click', () => {
-                currentCategory = pill.dataset.cat;
-                document.querySelectorAll('.cat-pill').forEach(p => {
-                    p.classList.remove('active', 'bg-blue-600', 'text-white');
-                    p.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
-                });
-                pill.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
-                pill.classList.add('active', 'bg-blue-600', 'text-white');
-                renderPatternCards();
+                selectLibraryCategory(pill.dataset.cat);
             });
         });
 
