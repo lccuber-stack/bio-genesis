@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Bio-Genesis">
+    <meta name="apple-mobile-web-app-title" content="Bio Genesis">
     <meta name="theme-color" content="#090d16">
     <link id="app-icon-link" rel="icon" type="image/png">
     <link id="apple-touch-icon-link" rel="apple-touch-icon" sizes="180x180">
-    <title>Bio-Genesis: Quantum Life</title>
+    <title>Bio Genesis</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script>
@@ -139,40 +139,49 @@
                 <svg id="brand-app-icon" viewBox="0 0 180 180" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#0f172a"/>
-                            <stop offset="100%" stop-color="#090d16"/>
+                            <stop offset="0%" stop-color="#131c31"/>
+                            <stop offset="100%" stop-color="#070a12"/>
                         </linearGradient>
                         <linearGradient id="cellCyan" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#22d3ee"/>
-                            <stop offset="100%" stop-color="#3b82f6"/>
+                            <stop offset="0%" stop-color="#38bdf8"/>
+                            <stop offset="100%" stop-color="#2563eb"/>
                         </linearGradient>
                         <linearGradient id="cellPurple" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stop-color="#818cf8"/>
-                            <stop offset="100%" stop-color="#c084fc"/>
+                            <stop offset="100%" stop-color="#a855f7"/>
                         </linearGradient>
+                        <radialGradient id="goldGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.45"/>
+                            <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+                        </radialGradient>
                     </defs>
                     <rect width="180" height="180" fill="url(#bgGrad)"/>
-                    <!-- Subtilt rutnät -->
-                    <g stroke="#334155" stroke-width="1.5" opacity="0.45">
-                        <line x1="45" y1="0" x2="45" y2="180"/>
-                        <line x1="90" y1="0" x2="90" y2="180"/>
-                        <line x1="135" y1="0" x2="135" y2="180"/>
-                        <line x1="0" y1="45" x2="180" y2="45"/>
-                        <line x1="0" y1="90" x2="180" y2="90"/>
-                        <line x1="0" y1="135" x2="180" y2="135"/>
+                    <!-- Symmetriskt 5x5 rutnät (36px per ruta) -->
+                    <g stroke="#334155" stroke-width="1" opacity="0.45">
+                        <line x1="36" y1="0" x2="36" y2="180"/>
+                        <line x1="72" y1="0" x2="72" y2="180"/>
+                        <line x1="108" y1="0" x2="108" y2="180"/>
+                        <line x1="144" y1="0" x2="144" y2="180"/>
+                        <line x1="0" y1="36" x2="180" y2="36"/>
+                        <line x1="0" y1="72" x2="180" y2="72"/>
+                        <line x1="0" y1="108" x2="180" y2="108"/>
+                        <line x1="0" y1="144" x2="180" y2="144"/>
                     </g>
-                    <!-- Glider- & Kvant-mönster -->
-                    <rect x="94" y="24" width="37" height="37" rx="9" fill="url(#cellCyan)"/>
-                    <rect x="139" y="69" width="37" height="37" rx="9" fill="url(#cellCyan)"/>
-                    <rect x="49" y="114" width="37" height="37" rx="9" fill="url(#cellPurple)"/>
-                    <rect x="94" y="114" width="37" height="37" rx="9" fill="url(#cellPurple)"/>
-                    <rect x="139" y="114" width="37" height="37" rx="9" fill="url(#cellCyan)"/>
-                    <!-- Gyllene Kvant-katalysator i mitten -->
-                    <rect x="49" y="49" width="37" height="37" rx="18.5" fill="#f59e0b"/>
+                    <!-- Mjuk guldglöd i centrum -->
+                    <circle cx="90" cy="90" r="46" fill="url(#goldGlow)"/>
+                    <!-- Centrerat 3x3 Glider-mönster (rutorna sitter på x/y: 36, 72, 108 med 3px marginal) -->
+                    <rect x="75" y="39" width="30" height="30" rx="7" fill="url(#cellCyan)"/>
+                    <rect x="111" y="75" width="30" height="30" rx="7" fill="url(#cellCyan)"/>
+                    <rect x="39" y="111" width="30" height="30" rx="7" fill="url(#cellPurple)"/>
+                    <rect x="75" y="111" width="30" height="30" rx="7" fill="url(#cellPurple)"/>
+                    <rect x="111" y="111" width="30" height="30" rx="7" fill="url(#cellCyan)"/>
+                    <!-- Gyllene Kvant-katalysator i exact center (72..108, 72..108) -->
+                    <circle cx="90" cy="90" r="14" fill="#f59e0b"/>
+                    <circle cx="90" cy="90" r="6" fill="#fef3c7" opacity="0.8"/>
                 </svg>
             </div>
 
-            <h1 class="text-2xl font-bold tracking-tight mb-1">Bio-Genesis</h1>
+            <h1 class="text-2xl font-bold tracking-tight mb-1">Bio Genesis</h1>
             <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">Quantum Game of Life</p>
             
             <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-5">
