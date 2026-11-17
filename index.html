@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bio-Genesis">
+    <meta name="theme-color" content="#090d16">
+    <link id="app-icon-link" rel="icon" type="image/png">
+    <link id="apple-touch-icon-link" rel="apple-touch-icon" sizes="180x180">
+    <title>Bio-Genesis: Quantum Life</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        obsidian: '#090d16',
+                        slatepanel: '#111827',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Anpassad CSS för smidig touch-hantering och spelkänsla */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none; /* Förhindrar iOS Safari bounce och zoom */
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        /* Snygga glasmorfism-effekter */
+        .glass {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        /* Anpassad scrollbar för mönster-modalen */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.4);
+            border-radius: 9999px;
+        }
+        /* Puls-animation för aktiv körning */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .running-indicator {
+            animation: pulse-ring 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-obsidian text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-300">
+
+    <!-- Topp-HUD: Status, Generation, Population & Snabbinställningar -->
+    <header class="fixed top-0 left-0 right-0 z-20 pt-[env(safe-area-inset-top)] px-3 py-2 pointer-events-none">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-2">
+            
+            <!-- Status & Mätare -->
+            <div class="pointer-events-auto glass bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl px-3.5 py-2 shadow-lg flex items-center gap-3 sm:gap-5">
+                <div class="flex items-center gap-2">
+                    <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span id="status-text" class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Paused</span>
+                </div>
+                <div class="h-4 w-[1px] bg-slate-300 dark:bg-slate-700"></div>
+                <div class="flex items-baseline gap-1.5">
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 uppercase">Gen</span>
+                    <span id="gen-count" class="font-mono text-sm sm:text-base font-bold text-blue-600 dark:text-blue-400">0</span>
+                </div>
+                <div class="flex items-baseline gap-1.5">
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 uppercase">Pop</span>
+                    <span id="pop-count" class="font-mono text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">0</span>
+                </div>
+            </div>
+
+            <!-- Höger snabbknappar: Ljud, Tema, Hjälp -->
+            <div class="pointer-events-auto flex items-center gap-1.5">
+                <!-- Twist-badge: Quantum Mode -->
+                <button id="btn-quantum" title="Toggle Quantum Mode (Trails & Aging)" class="glass bg-white/80 dark:bg-slate-900/80 border border-indigo-500/50 dark:border-indigo-400/50 text-indigo-600 dark:text-indigo-300 rounded-2xl px-3 py-2 shadow-lg text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span class="hidden sm:inline" id="quantum-label">Quantum: ON</span>
+                </button>
+
+                <button id="btn-sound" title="Generative Audio" class="glass bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-2.5 shadow-lg text-slate-700 dark:text-slate-200 active:scale-95 transition">
+                    <!-- Ljud av ikon som standard -->
+                    <svg id="icon-sound-off" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+                    <svg id="icon-sound-on" class="w-4 h-4 hidden text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+                </button>
+
+                <button id="btn-theme" title="Switch Theme (Light/Dark)" class="glass bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-2.5 shadow-lg text-slate-700 dark:text-slate-200 active:scale-95 transition">
+                    <svg id="icon-sun" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <svg id="icon-moon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
+
+                <button id="btn-help" title="How to Play" class="glass bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-2.5 shadow-lg text-slate-700 dark:text-slate-200 active:scale-95 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- START SCREEN / WELCOME MODAL -->
+    <div id="welcome-screen" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-3xl p-6 sm:p-7 shadow-2xl text-center relative overflow-hidden">
+            <!-- Dekorativ bakgrundsglöd -->
+            <div class="absolute -top-24 -left-24 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- App-ikonen (Samma som på hemskärmen) -->
+            <div class="mx-auto w-20 h-20 rounded-[22px] shadow-xl shadow-blue-500/25 mb-4 overflow-hidden border border-slate-200/50 dark:border-slate-700/80 flex items-center justify-center bg-[#090d16]">
+                <svg id="brand-app-icon" viewBox="0 0 180 180" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#0f172a"/>
+                            <stop offset="100%" stop-color="#090d16"/>
+                        </linearGradient>
+                        <linearGradient id="cellCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#22d3ee"/>
+                            <stop offset="100%" stop-color="#3b82f6"/>
+                        </linearGradient>
+                        <linearGradient id="cellPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#818cf8"/>
+                            <stop offset="100%" stop-color="#c084fc"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="180" height="180" fill="url(#bgGrad)"/>
+                    <!-- Subtilt rutnät -->
+                    <g stroke="#334155" stroke-width="1.5" opacity="0.45">
+                        <line x1="45" y1="0" x2="45" y2="180"/>
+                        <line x1="90" y1="0" x2="90" y2="180"/>
+                        <line x1="135" y1="0" x2="135" y2="180"/>
+                        <line x1="0" y1="45" x2="180" y2="45"/>
+                        <line x1="0" y1="90" x2="180" y2="90"/>
+                        <line x1="0" y1="135" x2="180" y2="135"/>
+                    </g>
+                    <!-- Glider- & Kvant-mönster -->
+                    <rect x="94" y="24" width="37" height="37" rx="9" fill="url(#cellCyan)"/>
+                    <rect x="139" y="69" width="37" height="37" rx="9" fill="url(#cellCyan)"/>
+                    <rect x="49" y="114" width="37" height="37" rx="9" fill="url(#cellPurple)"/>
+                    <rect x="94" y="114" width="37" height="37" rx="9" fill="url(#cellPurple)"/>
+                    <rect x="139" y="114" width="37" height="37" rx="9" fill="url(#cellCyan)"/>
+                    <!-- Gyllene Kvant-katalysator i mitten -->
+                    <rect x="49" y="49" width="37" height="37" rx="18.5" fill="#f59e0b"/>
+                </svg>
+            </div>
+
+            <h1 class="text-2xl font-bold tracking-tight mb-1">Bio-Genesis</h1>
+            <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">Quantum Game of Life</p>
+            
+            <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-5">
+                Create digital life on an infinite grid. Every cell lives, ages, or dies based on its neighbors—watch simple patterns evolve into living organisms.
+            </p>
+
+            <!-- Simple 3-step instructions -->
+            <div class="space-y-2.5 text-left bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl p-4 mb-6">
+                <div class="flex items-start gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-blue-600/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">1</div>
+                    <div class="text-xs text-slate-700 dark:text-slate-300">
+                        <strong class="text-slate-900 dark:text-white block">Draw cells on the grid</strong>
+                        Tap or drag with your finger or mouse. Use the <span class="text-amber-500 font-semibold">flask</span> to place immortal energy catalysts.
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">2</div>
+                    <div class="text-xs text-slate-700 dark:text-slate-300">
+                        <strong class="text-slate-900 dark:text-white block">Start the evolution</strong>
+                        Press <span class="font-semibold">Play</span> at the bottom, or step forward and backward through time generation by generation.
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-purple-600/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">3</div>
+                    <div class="text-xs text-slate-700 dark:text-slate-300">
+                        <strong class="text-slate-900 dark:text-white block">Explore & Zoom</strong>
+                        Pinch with two fingers (or scroll) to zoom. Open the <span class="font-semibold">folder</span> to load classic patterns.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Option to show welcome screen on startup -->
+            <label class="flex items-center justify-center gap-2.5 mb-5 cursor-pointer text-xs text-slate-600 dark:text-slate-400 select-none">
+                <input id="chk-show-welcome" type="checkbox" checked class="w-4 h-4 rounded accent-blue-600 cursor-pointer">
+                <span>Show welcome screen on startup</span>
+            </label>
+
+            <button id="btn-start-game" class="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm shadow-lg shadow-blue-600/30 active:scale-95 transition">
+                Start Creating on Empty Grid
+            </button>
+        </div>
+    </div>
+
+    <!-- Huvud-Canvas för Rutnätet -->
+    <main class="relative flex-1 w-full h-full">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Flytande Verktygsväljare (Vänster/Topp på mobil) -->
+        <div class="fixed left-3 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 glass bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 p-1.5 rounded-2xl shadow-xl">
+            <button data-tool="draw" class="tool-btn active bg-blue-600 text-white p-2.5 rounded-xl transition active:scale-90" title="Draw Cells (Pencil)">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            </button>
+            <button data-tool="catalyst" class="tool-btn text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 p-2.5 rounded-xl transition active:scale-90" title="Quantum Catalyst (Immortal Energy Node)">
+                <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            </button>
+            <button data-tool="erase" class="tool-btn text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 p-2.5 rounded-xl transition active:scale-90" title="Eraser">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+            <div class="h-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <button data-tool="pan" class="tool-btn text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 p-2.5 rounded-xl transition active:scale-90" title="Pan & Move View">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            </button>
+            <div class="h-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <button id="btn-quick-clear" class="text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 p-2.5 rounded-xl transition active:scale-90" title="Clear Entire Grid">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+        </div>
+
+        <!-- Zoom-kontroller (Höger nedre hörn) -->
+        <div class="fixed right-3 bottom-24 z-20 flex flex-col gap-1.5 glass bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 p-1.5 rounded-2xl shadow-lg">
+            <button id="btn-zoom-in" class="p-2 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 active:scale-90 transition" title="Zoom In">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            </button>
+            <button id="btn-zoom-reset" class="p-1.5 text-[10px] font-mono font-bold rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 active:scale-90 transition" title="Reset View">
+                100%
+            </button>
+            <button id="btn-zoom-out" class="p-2 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 active:scale-90 transition" title="Zoom Out">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+            </button>
+        </div>
+    </main>
+
+    <!-- Botten-Dock: Inspirerad av skärmbilden men uppgraderad -->
+    <footer class="fixed bottom-0 left-0 right-0 z-20 pb-[calc(env(safe-area-inset-bottom)+12px)] px-4 pt-2 pointer-events-none">
+        <div class="max-w-lg mx-auto flex items-center justify-between gap-3">
+            
+            <!-- Vänster: Mönsterbibliotek -->
+            <button id="btn-library" class="pointer-events-auto glass bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-105 active:scale-95 transition" title="Pattern Library">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+            </button>
+
+            <!-- Mitten: Huvudkontroller -->
+            <div class="pointer-events-auto glass bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-full px-3 py-2 shadow-xl flex items-center gap-3 sm:gap-4">
+                <!-- Stega bakåt (Historik!) -->
+                <button id="btn-step-back" class="w-11 h-11 rounded-full border border-blue-500/30 dark:border-blue-400/30 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition disabled:opacity-30" title="Step Backward in Time (Left Arrow)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                </button>
+
+                <!-- Spela / Pausa -->
+                <button id="btn-play-pause" class="w-13 h-13 p-3.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center active:scale-90 transition" title="Play / Pause (Space)">
+                    <svg id="icon-play" class="w-6 h-6 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="icon-pause" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+
+                <!-- Stega framåt -->
+                <button id="btn-step-forward" class="w-11 h-11 rounded-full border border-blue-500/30 dark:border-blue-400/30 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition" title="Next Generation (Right Arrow)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </button>
+            </div>
+
+            <!-- Höger: Fler alternativ / Inställningar -->
+            <button id="btn-more" class="pointer-events-auto glass bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-slate-700 dark:text-slate-200 hover:scale-105 active:scale-95 transition" title="Simulation Settings & Rules">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
+            </button>
+
+        </div>
+    </footer>
+
+    <!-- MODAL 1: Pattern Library -->
+    <div id="modal-library" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform transition-all max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-xl font-bold">Patterns & Organisms</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Choose a starting formation for the grid</p>
+                </div>
+                <button class="close-modal p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto pr-1 pb-4">
+                <button data-pattern="symmetric_bloom" class="pattern-card text-left p-4 rounded-2xl border border-blue-500/40 bg-blue-50/50 dark:bg-blue-950/30 hover:border-blue-500 transition">
+                    <div class="font-bold text-blue-600 dark:text-blue-400 text-sm mb-1">✨ Symmetric Quantum Bloom</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Evolves in mesmerizing kaleidoscopic waves across the grid.</p>
+                </button>
+
+                <button data-pattern="gosper_gun" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
+                    <div class="font-bold text-sm mb-1">🚀 Gosper Glider Gun</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Classic perpetual machine that fires an endless stream of gliders.</p>
+                </button>
+
+                <button data-pattern="pulsar" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
+                    <div class="font-bold text-sm mb-1">💫 Cosmic Pulsar</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">A large symmetric oscillator with a rhythmic period of 3.</p>
+                </button>
+
+                <button data-pattern="r_pentomino" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
+                    <div class="font-bold text-sm mb-1">🧬 R-Pentomino (Chaos)</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Just 5 cells that spark 1,103 generations of pure chaos.</p>
+                </button>
+
+                <button data-pattern="spaceship_fleet" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
+                    <div class="font-bold text-sm mb-1">🛸 Spaceship Fleet</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">A squadron of LWSS spaceships cruising across the grid.</p>
+                </button>
+
+                <button data-pattern="pentadecathlon" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
+                    <div class="font-bold text-sm mb-1">⚡ Pentadecathlon</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">A rhythmic 15-generation oscillator that pulses like a heartbeat.</p>
+                </button>
+
+                <button data-pattern="acorn" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
+                    <div class="font-bold text-sm mb-1">🌱 Acorn Methuselah</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">7 tiny cells that grow into a massive ecosystem over 5,206 generations.</p>
+                </button>
+
+                <button data-pattern="diehard" class="pattern-card text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition">
+                    <div class="font-bold text-sm mb-1">⏳ Diehard</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">A mysterious 7-cell pattern that vanishes completely after 130 steps.</p>
+                </button>
+
+                <button data-pattern="quantum_reactor" class="pattern-card text-left p-4 rounded-2xl border border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/20 hover:border-amber-500 transition">
+                    <div class="font-bold text-amber-600 dark:text-amber-400 text-sm mb-1">⚛️ Quantum Catalyst Reactor</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Immortal golden energy nodes surrounded by an active plasma ring.</p>
+                </button>
+
+                <button data-pattern="random" class="pattern-card text-left p-4 rounded-2xl border border-emerald-500/40 bg-emerald-50/40 dark:bg-emerald-950/20 hover:border-emerald-500 transition">
+                    <div class="font-bold text-emerald-600 dark:text-emerald-400 text-sm mb-1">🎲 Primordial Soup (Random)</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Populates the universe with random life and golden catalysts.</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Settings & Rules -->
+    <div id="modal-more" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform transition-all">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-xl font-bold">Simulation Controls</h2>
+                <button class="close-modal p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="space-y-5">
+                <!-- Speed Slider -->
+                <div>
+                    <div class="flex justify-between text-sm font-medium mb-2">
+                        <span>Simulation Speed</span>
+                        <span id="speed-val" class="font-mono text-blue-500 font-bold">15 FPS</span>
+                    </div>
+                    <input id="speed-slider" type="range" min="1" max="60" value="15" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                </div>
+
+                <!-- Rulesets -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Universe Physics Rules</label>
+                    <select id="rule-select" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="B3/S23">Classic Conway (B3/S23)</option>
+                        <option value="B36/S23">HighLife - Replicators (B36/S23)</option>
+                        <option value="B2/S">Seeds - Explosive Growth (B2/S)</option>
+                        <option value="B3678/S34678">Day & Night - Symmetric (B3678/S34678)</option>
+                    </select>
+                </div>
+
+                <!-- Toroid Universe -->
+                <div class="flex items-center justify-between py-1">
+                    <div>
+                        <div class="text-sm font-medium">Infinite Toroid Universe</div>
+                        <div class="text-xs text-slate-500">Wrap edges seamlessly around the grid</div>
+                    </div>
+                    <input id="wrap-toggle" type="checkbox" checked class="w-5 h-5 accent-blue-600 rounded cursor-pointer">
+                </div>
+
+                <!-- Clear Grid -->
+                <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+                    <button id="btn-clear" class="flex-1 py-3 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-sm transition active:scale-95">
+                        Clear Grid
+                    </button>
+                    <button class="close-modal flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition active:scale-95">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-opacity duration-300 glass bg-slate-900/90 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg">
+        Message
+    </div>
+
+    <script>
+        /**
+         * BIO-GENESIS: QUANTUM LIFE
+         * Professionell webbapp för iPhone, iPad och Desktop.
+         * Innehåller Conways Game of Life med unika kvant-mekaniker:
+         * 1. Cell-åldrande (färgskiftning från ung cyan till mogen indigo/guld).
+         * 2. Kvant-spår (efterglöd där celler nyss dött).
+         * 3. Katalysator-noder (odödliga energikällor som kontinuerligt föder liv).
+         * 4. Tidsmaskin (spolning bakåt upp till 50 generationer).
+         * 5. Generativ pentatonisk ljudsyntes via Web Audio API.
+         */
+
+        // --- KONFIGURATION & TILLSTÅND ---
+        const COLS = 100;
+        const ROWS = 100;
+        
+        // Cell-tillstånd i primary grid:
+        // 0 = Död, >0 = Levande (värdet anger ålder i generationer), -1 = Kvant-Katalysator (permanent energikälla)
+        let grid = createEmptyGrid();
+        // Trail grid lagrar energi-ekon (0.0 till 1.0) för visuell svans
+        let trailGrid = Array.from({ length: ROWS }, () => new Float32Array(COLS));
+        // Historik-stack för att kunna stega bakåt i tiden
+        let historyStack = [];
+        const MAX_HISTORY = 50;
+
+        let isRunning = false;
+        let generation = 0;
+        let population = 0;
+        let fps = 15;
+        let lastFrameTime = 0;
+        let quantumMode = true;
+        let wrapEdges = true;
+        let currentRule = { born: [3], survive: [2, 3] };
+
+        // Kamera & Viewport (Zoom & Panorering)
+        let cellSize = 14;
+        let offsetX = 0;
+        let offsetY = 0;
+        let currentTool = 'draw'; // 'draw', 'catalyst', 'erase', 'pan'
+
+        // Ljudsyntes
+        let soundEnabled = false;
+        let audioCtx = null;
+        const pentatonicScale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+
+        // DOM-element
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const genEl = document.getElementById('gen-count');
+        const popEl = document.getElementById('pop-count');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+
+        // --- HJÄLPFUNKTIONER ---
+        function createEmptyGrid() {
+            return Array.from({ length: ROWS }, () => new Int16Array(COLS));
+        }
+
+        function cloneGrid(g) {
+            return g.map(row => new Int16Array(row));
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('opacity-0');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => toast.classList.add('opacity-0'), 2200);
+        }
+
+        // --- LJUDSYNTES (WEB AUDIO API) ---
+        function playBirthNote(bornCount) {
+            if (!soundEnabled || bornCount === 0) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const freq = pentatonicScale[bornCount % pentatonicScale.length];
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.18);
+            } catch (e) {
+                // Ignorera ljudfel om webbläsaren blockerar
+            }
+        }
+
+        // --- SIMULERINGSLOGIK ---
+        function stepSimulation() {
+            // Spara nuvarande tillstånd i historiken
+            if (historyStack.length >= MAX_HISTORY) historyStack.shift();
+            historyStack.push({ grid: cloneGrid(grid), gen: generation });
+
+            const nextGrid = createEmptyGrid();
+            let newPop = 0;
+            let births = 0;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const state = grid[r][c];
+
+                    // Minska befintligt kvant-spår
+                    if (trailGrid[r][c] > 0) {
+                        trailGrid[r][c] = Math.max(0, trailGrid[r][c] - 0.14);
+                    }
+
+                    // Katalysator-celler (-1) överlever alltid och räknas som grannar
+                    if (state === -1) {
+                        nextGrid[r][c] = -1;
+                        newPop++;
+                        continue;
+                    }
+
+                    // Räkna levande grannar
+                    let neighbors = 0;
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            if (dr === 0 && dc === 0) continue;
+                            let nr = r + dr;
+                            let nc = c + dc;
+
+                            if (wrapEdges) {
+                                nr = (nr + ROWS) % ROWS;
+                                nc = (nc + COLS) % COLS;
+                            } else if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) {
+                                continue;
+                            }
+
+                            if (grid[nr][nc] !== 0) {
+                                neighbors++;
+                            }
+                        }
+                    }
+
+                    // Tillämpa regler
+                    if (state > 0) {
+                        // Levande cell
+                        if (currentRule.survive.includes(neighbors)) {
+                            nextGrid[r][c] = Math.min(state + 1, 100); // Åldras
+                            newPop++;
+                        } else {
+                            // Dör -> Lämna kvant-spår
+                            nextGrid[r][c] = 0;
+                            if (quantumMode) trailGrid[r][c] = 0.85;
+                        }
+                    } else {
+                        // Död cell
+                        if (currentRule.born.includes(neighbors)) {
+                            nextGrid[r][c] = 1; // Föds (ålder 1)
+                            newPop++;
+                            births++;
+                        }
+                    }
+                }
+            }
+
+            grid = nextGrid;
+            generation++;
+            population = newPop;
+            updateHUD();
+            if (births > 0 && generation % 2 === 0) playBirthNote(births);
+        }
+
+        function stepBackward() {
+            if (historyStack.length === 0) {
+                showToast("No previous history");
+                return;
+            }
+            if (isRunning) togglePlay(false);
+            const prev = historyStack.pop();
+            grid = prev.grid;
+            generation = prev.gen;
+            recalculatePopulation();
+            updateHUD();
+            render();
+        }
+
+        function recalculatePopulation() {
+            let count = 0;
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c] !== 0) count++;
+                }
+            }
+            population = count;
+        }
+
+        function updateHUD() {
+            genEl.textContent = generation;
+            popEl.textContent = population;
+            document.getElementById('btn-step-back').disabled = historyStack.length === 0;
+        }
+
+        // --- RENDERING (CANVAS) ---
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.scale(dpr, dpr);
+            centerGrid();
+            render();
+        }
+
+        function centerGrid() {
+            const totalW = COLS * cellSize;
+            const totalH = ROWS * cellSize;
+            offsetX = (window.innerWidth - totalW) / 2;
+            offsetY = (window.innerHeight - totalH) / 2;
+        }
+
+        function render() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            // Bakgrund
+            ctx.fillStyle = isDark ? '#090d16' : '#f8fafc';
+            ctx.fillRect(0, 0, w, h);
+
+            // Beräkna synliga rader/kolumner för maximal prestanda på mobil
+            const startCol = Math.max(0, Math.floor(-offsetX / cellSize));
+            const endCol = Math.min(COLS, Math.ceil((w - offsetX) / cellSize));
+            const startRow = Math.max(0, Math.floor(-offsetY / cellSize));
+            const endRow = Math.min(ROWS, Math.ceil((h - offsetY) / cellSize));
+
+            // Rita kvant-spår och celler
+            for (let r = startRow; r < endRow; r++) {
+                const y = offsetY + r * cellSize;
+                for (let c = startCol; c < endCol; c++) {
+                    const x = offsetX + c * cellSize;
+                    const state = grid[r][c];
+                    const trail = trailGrid[r][c];
+
+                    // Rita kvant-spår (om aktiverat)
+                    if (quantumMode && state === 0 && trail > 0.02) {
+                        ctx.fillStyle = isDark 
+                            ? `rgba(56, 189, 248, ${trail * 0.25})` 
+                            : `rgba(59, 130, 246, ${trail * 0.18})`;
+                        ctx.fillRect(x, y, cellSize, cellSize);
+                    }
+
+                    // Rita levande cell eller katalysator
+                    if (state !== 0) {
+                        if (state === -1) {
+                            // Kvant-Katalysator (Guld/Amber med glöd)
+                            ctx.fillStyle = '#f59e0b';
+                        } else if (!quantumMode) {
+                            // Klassisk klarblå (som i originalbilden!)
+                            ctx.fillStyle = isDark ? '#3b82f6' : '#1d4ed8';
+                        } else {
+                            // Quantum Ålders-färgning: Nyfödd Cyan -> Blå -> Mogen Violett/Magenta
+                            if (state === 1) {
+                                ctx.fillStyle = isDark ? '#22d3ee' : '#0284c7'; // Nyfödd
+                            } else if (state < 5) {
+                                ctx.fillStyle = isDark ? '#3b82f6' : '#2563eb'; // Ung
+                            } else if (state < 15) {
+                                ctx.fillStyle = isDark ? '#818cf8' : '#4f46e5'; // Vuxen
+                            } else {
+                                ctx.fillStyle = isDark ? '#c084fc' : '#7c3aed'; // Åldrad visdom
+                            }
+                        }
+
+                        const pad = cellSize > 8 ? 1 : 0;
+                        if (cellSize > 10) {
+                            // Rundade hörn när man är inzoomad
+                            roundRect(ctx, x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, Math.min(4, cellSize * 0.22));
+                            ctx.fill();
+                        } else {
+                            ctx.fillRect(x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2);
+                        }
+                    }
+                }
+            }
+
+            // Rita rutnätet (om cellerna är tillräckligt stora för att det ska se snyggt ut)
+            if (cellSize >= 6) {
+                ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(148, 163, 184, 0.35)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+
+                for (let c = startCol; c <= endCol; c++) {
+                    const x = Math.floor(offsetX + c * cellSize) + 0.5;
+                    ctx.moveTo(x, Math.max(0, offsetY));
+                    ctx.lineTo(x, Math.min(h, offsetY + ROWS * cellSize));
+                }
+                for (let r = startRow; r <= endRow; r++) {
+                    const y = Math.floor(offsetY + r * cellSize) + 0.5;
+                    ctx.moveTo(Math.max(0, offsetX), y);
+                    ctx.lineTo(Math.min(w, offsetX + COLS * cellSize), y);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.arcTo(x + width, y, x + width, y + height, radius);
+            ctx.arcTo(x + width, y + height, x, y + height, radius);
+            ctx.arcTo(x, y + height, x, y, radius);
+            ctx.arcTo(x, y, x + width, y, radius);
+            ctx.closePath();
+        }
+
+        // --- HUVUDLOOP ---
+        function gameLoop(timestamp) {
+            if (isRunning) {
+                const interval = 1000 / fps;
+                if (timestamp - lastFrameTime >= interval) {
+                    stepSimulation();
+                    lastFrameTime = timestamp;
+                }
+            }
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- INTERAKTION: MUS & TOUCH (iPhone / iPad / Dator) ---
+        let isPointerDown = false;
+        let lastPointerPos = { x: 0, y: 0 };
+        let initialPinchDist = null;
+        let initialCellSize = cellSize;
+
+        function applyToolAt(clientX, clientY) {
+            const col = Math.floor((clientX - offsetX) / cellSize);
+            const row = Math.floor((clientY - offsetY) / cellSize);
+
+            if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+                if (currentTool === 'draw' && grid[row][col] === 0) {
+                    grid[row][col] = 1;
+                    population++;
+                    updateHUD();
+                } else if (currentTool === 'catalyst' && grid[row][col] !== -1) {
+                    if (grid[row][col] === 0) population++;
+                    grid[row][col] = -1;
+                    updateHUD();
+                } else if (currentTool === 'erase' && grid[row][col] !== 0) {
+                    grid[row][col] = 0;
+                    trailGrid[row][col] = 0;
+                    population--;
+                    updateHUD();
+                }
+            }
+        }
+
+        // Mus-händelser
+        canvas.addEventListener('mousedown', (e) => {
+            isPointerDown = true;
+            lastPointerPos = { x: e.clientX, y: e.clientY };
+            if (currentTool !== 'pan' && e.button === 0) {
+                applyToolAt(e.clientX, e.clientY);
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isPointerDown) return;
+            if (currentTool === 'pan' || e.buttons === 4 || e.shiftKey) {
+                offsetX += e.clientX - lastPointerPos.x;
+                offsetY += e.clientY - lastPointerPos.y;
+            } else {
+                applyToolAt(e.clientX, e.clientY);
+            }
+            lastPointerPos = { x: e.clientX, y: e.clientY };
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPointerDown = false;
+        });
+
+        // Mushjul för zoom
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
+            zoomAt(e.clientX, e.clientY, zoomFactor);
+        }, { passive: false });
+
+        // Touch-händelser (1 finger = rita/panorera, 2 fingrar = pinch-zoom & panorera)
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                isPointerDown = true;
+                const t = e.touches[0];
+                lastPointerPos = { x: t.clientX, y: t.clientY };
+                if (currentTool !== 'pan') {
+                    applyToolAt(t.clientX, t.clientY);
+                }
+            } else if (e.touches.length === 2) {
+                isPointerDown = false;
+                initialPinchDist = getPinchDistance(e.touches);
+                initialCellSize = cellSize;
+                lastPointerPos = getPinchCenter(e.touches);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1 && isPointerDown) {
+                const t = e.touches[0];
+                if (currentTool === 'pan') {
+                    offsetX += t.clientX - lastPointerPos.x;
+                    offsetY += t.clientY - lastPointerPos.y;
+                } else {
+                    applyToolAt(t.clientX, t.clientY);
+                }
+                lastPointerPos = { x: t.clientX, y: t.clientY };
+            } else if (e.touches.length === 2 && initialPinchDist) {
+                const dist = getPinchDistance(e.touches);
+                const center = getPinchCenter(e.touches);
+                const scale = dist / initialPinchDist;
+                const targetSize = Math.max(4, Math.min(48, initialCellSize * scale));
+                
+                zoomAt(center.x, center.y, targetSize / cellSize);
+                offsetX += center.x - lastPointerPos.x;
+                offsetY += center.y - lastPointerPos.y;
+                lastPointerPos = center;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) initialPinchDist = null;
+            if (e.touches.length === 0) isPointerDown = false;
+        });
+
+        function getPinchDistance(touches) {
+            return Math.hypot(
+                touches[0].clientX - touches[1].clientX,
+                touches[0].clientY - touches[1].clientY
+            );
+        }
+
+        function getPinchCenter(touches) {
+            return {
+                x: (touches[0].clientX + touches[1].clientX) / 2,
+                y: (touches[0].clientY + touches[1].clientY) / 2
+            };
+        }
+
+        function zoomAt(cx, cy, factor) {
+            const newSize = Math.max(4, Math.min(48, cellSize * factor));
+            const actualFactor = newSize / cellSize;
+            offsetX = cx - (cx - offsetX) * actualFactor;
+            offsetY = cy - (cy - offsetY) * actualFactor;
+            cellSize = newSize;
+            document.getElementById('btn-zoom-reset').textContent = Math.round((cellSize / 14) * 100) + '%';
+        }
+
+        // --- MÖNSTERBIBLIOTEK ---
+        const PATTERNS = {
+            symmetric_bloom: [
+                [-6,-6],[-6,-5],[-5,-6],[-5,-5], [-6,-1],[-6,0],[-6,1], [-6,5],[-6,6],[-5,5],[-5,6],
+                [-2,-10],[-2,-9],[-1,-11],[-1,-8],[0,-12],[0,-7],[1,-10],[1,-6],[2,-9],[2,-6],[3,-8],
+                [-2,9],[-2,10],[-1,8],[-1,11],[0,7],[0,12],[1,6],[1,10],[2,6],[2,9],[3,8],
+                [0,-4],[0,-3],[1,-4],[1,-2],[2,-3],[3,-2],[4,-3],[4,-2],[5,-4],[5,-1],[6,-3],[6,-2],
+                [0,3],[0,4],[1,2],[1,4],[2,3],[3,2],[4,2],[4,3],[5,1],[5,4],[6,2],[6,3]
+            ],
+            gosper_gun: [
+                [0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
+                [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
+                [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
+                [7,11],[7,15],[8,12],[8,13]
+            ],
+            pulsar: [
+                [-6,-4],[-6,-3],[-6,-2],[-6,2],[-6,3],[-6,4],
+                [-4,-6],[-3,-6],[-2,-6],[-4,-1],[-3,-1],[-2,-1],[-4,1],[-3,1],[-2,1],[-4,6],[-3,6],[-2,6],
+                [-1,-4],[-1,-3],[-1,-2],[-1,2],[-1,3],[-1,4],
+                [1,-4],[1,-3],[1,-2],[1,2],[1,3],[1,4],
+                [2,-6],[3,-6],[4,-6],[2,-1],[3,-1],[4,-1],[2,1],[3,1],[4,1],[2,6],[3,6],[4,6],
+                [6,-4],[6,-3],[6,-2],[6,2],[6,3],[6,4]
+            ],
+            r_pentomino: [
+                [-1,0],[-1,1],[0,-1],[0,0],[1,0]
+            ],
+            spaceship_fleet: [
+                [-8,-10],[-8,-7],[-7,-11],[-6,-11],[-6,-7],[-5,-11],[-5,-10],[-5,-9],[-5,-8],
+                [0,-5],[0,-2],[1,-6],[2,-6],[2,-2],[3,-6],[3,-5],[3,-4],[3,-3],
+                [8,0],[8,3],[9,-1],[10,-1],[10,3],[11,-1],[11,0],[11,1],[11,2]
+            ],
+            pentadecathlon: [
+                [-4,0],[-3,0],[-2,-1],[-2,1],[-1,0],[0,0],[1,0],[2,0],[3,-1],[3,1],[4,0],[5,0]
+            ],
+            acorn: [
+                [-1,-2],[0,0],[1,-3],[1,-2],[1,1],[1,2],[1,3]
+            ],
+            diehard: [
+                [-1,3],[0,-3],[0,-2],[1,-2],[1,2],[1,3],[1,4]
+            ]
+        };
+
+        function loadPattern(name) {
+            togglePlay(false);
+            grid = createEmptyGrid();
+            trailGrid = Array.from({ length: ROWS }, () => new Float32Array(COLS));
+            historyStack = [];
+            generation = 0;
+
+            const centerR = Math.floor(ROWS / 2);
+            const centerC = Math.floor(COLS / 2);
+
+            if (name === 'random') {
+                for (let r = 15; r < ROWS - 15; r++) {
+                    for (let c = 15; c < COLS - 15; c++) {
+                        if (Math.random() < 0.24) {
+                            grid[r][c] = Math.random() < 0.015 ? -1 : 1; // 1.5% chans för katalysator
+                        }
+                    }
+                }
+            } else if (name === 'quantum_reactor') {
+                // Placera en symmetrisk kärna med odödliga katalysatorer (-1) och levande celler (1)
+                const catalysts = [[-3,-3],[-3,3],[3,-3],[3,3],[0,0]];
+                catalysts.forEach(([dr, dc]) => {
+                    grid[centerR + dr][centerC + dc] = -1;
+                });
+                for (let dr = -5; dr <= 5; dr++) {
+                    for (let dc = -5; dc <= 5; dc++) {
+                        if (Math.abs(dr) === 5 || Math.abs(dc) === 5 || (Math.abs(dr) === 1 && Math.abs(dc) === 1)) {
+                            if (grid[centerR + dr][centerC + dc] === 0) {
+                                grid[centerR + dr][centerC + dc] = 1;
+                            }
+                        }
+                    }
+                }
+            } else if (PATTERNS[name]) {
+                const coords = PATTERNS[name];
+                // Centrera mönstret
+                const offsetC = name === 'gosper_gun' ? -18 : 0;
+                const offsetR = name === 'gosper_gun' ? -5 : 0;
+                coords.forEach(([dr, dc]) => {
+                    const r = centerR + dr + offsetR;
+                    const c = centerC + dc + offsetC;
+                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                        grid[r][c] = 1;
+                    }
+                });
+            }
+
+            recalculatePopulation();
+            updateHUD();
+            centerGrid();
+            render();
+        }
+
+        // --- UI-KONTROLLER & EVENT LISTENERS ---
+        function togglePlay(forceState) {
+            isRunning = typeof forceState === 'boolean' ? forceState : !isRunning;
+            const iconPlay = document.getElementById('icon-play');
+            const iconPause = document.getElementById('icon-pause');
+
+            if (isRunning) {
+                iconPlay.classList.add('hidden');
+                iconPause.classList.remove('hidden');
+                statusText.textContent = 'Running';
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 running-indicator';
+            } else {
+                iconPlay.classList.remove('hidden');
+                iconPause.classList.add('hidden');
+                statusText.textContent = 'Paused';
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+            }
+        }
+
+        document.getElementById('btn-play-pause').addEventListener('click', () => togglePlay());
+        document.getElementById('btn-step-forward').addEventListener('click', () => {
+            if (isRunning) togglePlay(false);
+            stepSimulation();
+        });
+        document.getElementById('btn-step-back').addEventListener('click', stepBackward);
+
+        // Verktygsväljare
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-blue-600', 'text-white');
+                    b.classList.add('text-slate-600', 'dark:text-slate-300');
+                });
+                btn.classList.add('active', 'bg-blue-600', 'text-white');
+                btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+                currentTool = btn.dataset.tool;
+
+                const names = {
+                    draw: 'Pencil: Draw cells',
+                    catalyst: 'Catalyst: Immortal energy node',
+                    erase: 'Eraser: Remove cells',
+                    pan: 'Pan: Drag to move view'
+                };
+                showToast(names[currentTool]);
+            });
+        });
+
+        // Zoom-knappar
+        document.getElementById('btn-zoom-in').addEventListener('click', () => zoomAt(window.innerWidth / 2, window.innerHeight / 2, 1.25));
+        document.getElementById('btn-zoom-out').addEventListener('click', () => zoomAt(window.innerWidth / 2, window.innerHeight / 2, 0.8));
+        document.getElementById('btn-zoom-reset').addEventListener('click', () => {
+            cellSize = 14;
+            centerGrid();
+            document.getElementById('btn-zoom-reset').textContent = '100%';
+            showToast('View reset');
+        });
+
+        // Quantum-läge toggle
+        document.getElementById('btn-quantum').addEventListener('click', () => {
+            quantumMode = !quantumMode;
+            document.getElementById('quantum-label').textContent = quantumMode ? 'Quantum: ON' : 'Classic';
+            showToast(quantumMode ? 'Quantum Mode: Aging & trails enabled' : 'Classic mode enabled');
+        });
+
+        // Ljud toggle
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('icon-sound-on').classList.toggle('hidden', !soundEnabled);
+            document.getElementById('icon-sound-off').classList.toggle('hidden', soundEnabled);
+            if (soundEnabled) playBirthNote(3);
+            showToast(soundEnabled ? 'Generative audio: ON' : 'Audio: OFF');
+        });
+
+        // Tema toggle (Ljust / Mörkt)
+        document.getElementById('btn-theme').addEventListener('click', () => {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
+            document.getElementById('icon-moon').classList.toggle('hidden', isDark);
+        });
+
+        // Modaler
+        const modalLib = document.getElementById('modal-library');
+        const modalMore = document.getElementById('modal-more');
+
+        document.getElementById('btn-library').addEventListener('click', () => modalLib.classList.remove('hidden'));
+        document.getElementById('btn-more').addEventListener('click', () => modalMore.classList.remove('hidden'));
+
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modalLib.classList.add('hidden');
+                modalMore.classList.add('hidden');
+            });
+        });
+
+        document.querySelectorAll('.pattern-card').forEach(card => {
+            card.addEventListener('click', () => {
+                loadPattern(card.dataset.pattern);
+                modalLib.classList.add('hidden');
+                showToast('Pattern loaded');
+            });
+        });
+
+        // Inställningar i More-modalen
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            fps = parseInt(e.target.value, 10);
+            document.getElementById('speed-val').textContent = `${fps} FPS`;
+        });
+
+        document.getElementById('rule-select').addEventListener('change', (e) => {
+            const val = e.target.value;
+            const [bPart, sPart] = val.split('/');
+            currentRule = {
+                born: bPart.replace('B', '').split('').map(Number),
+                survive: sPart.replace('S', '').split('').map(Number)
+            };
+            showToast(`Rule changed to ${val}`);
+        });
+
+        document.getElementById('wrap-toggle').addEventListener('change', (e) => {
+            wrapEdges = e.target.checked;
+        });
+
+        function clearEntireGrid() {
+            togglePlay(false);
+            grid = createEmptyGrid();
+            trailGrid = Array.from({ length: ROWS }, () => new Float32Array(COLS));
+            historyStack = [];
+            generation = 0;
+            population = 0;
+            updateHUD();
+            render();
+            modalMore.classList.add('hidden');
+            showToast('Grid cleared');
+        }
+
+        document.getElementById('btn-clear').addEventListener('click', clearEntireGrid);
+        document.getElementById('btn-quick-clear').addEventListener('click', clearEntireGrid);
+
+        // Tangentbordsgenvägar för dator
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'ArrowRight') {
+                if (isRunning) togglePlay(false);
+                stepSimulation();
+            } else if (e.code === 'ArrowLeft') {
+                stepBackward();
+            }
+        });
+
+        // --- APP-IKON GENERATOR (För iPhone/iPad Hemskärm & Favicon) ---
+        function generateHomeScreenIcon() {
+            try {
+                const svgEl = document.getElementById('brand-app-icon');
+                const serializer = new XMLSerializer();
+                const svgStr = serializer.serializeToString(svgEl);
+                const img = new Image();
+                const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(svgBlob);
+
+                img.onload = function () {
+                    const iconCanvas = document.createElement('canvas');
+                    iconCanvas.width = 180;
+                    iconCanvas.height = 180;
+                    const iconCtx = iconCanvas.getContext('2d');
+                    iconCtx.drawImage(img, 0, 0, 180, 180);
+                    const pngDataUrl = iconCanvas.toDataURL('image/png');
+
+                    document.getElementById('apple-touch-icon-link').href = pngDataUrl;
+                    document.getElementById('app-icon-link').href = pngDataUrl;
+                    URL.revokeObjectURL(url);
+                };
+                img.src = url;
+            } catch (e) {
+                // Fallback om SVG-serialisering blockeras
+            }
+        }
+
+        // --- STARTSKÄRM & HJÄLP-HANTERING ---
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const chkShowWelcome = document.getElementById('chk-show-welcome');
+        const WELCOME_PREF_KEY = 'biogenesis_show_welcome';
+
+        // Ladda sparad inställning för startskärmen
+        const savedWelcomePref = localStorage.getItem(WELCOME_PREF_KEY);
+        if (savedWelcomePref === 'false') {
+            chkShowWelcome.checked = false;
+            welcomeScreen.classList.add('hidden', 'opacity-0', 'pointer-events-none');
+        }
+
+        chkShowWelcome.addEventListener('change', (e) => {
+            localStorage.setItem(WELCOME_PREF_KEY, e.target.checked ? 'true' : 'false');
+        });
+
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            localStorage.setItem(WELCOME_PREF_KEY, chkShowWelcome.checked ? 'true' : 'false');
+            welcomeScreen.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => welcomeScreen.classList.add('hidden'), 300);
+            showToast('Grid is ready — draw your first cells!');
+        });
+
+        document.getElementById('btn-help').addEventListener('click', () => {
+            if (isRunning) togglePlay(false);
+            welcomeScreen.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                welcomeScreen.classList.remove('opacity-0', 'pointer-events-none');
+            });
+        });
+
+        // --- INITIERING ---
+        window.addEventListener('resize', resizeCanvas);
+        window.onload = () => {
+            generateHomeScreenIcon();
+            resizeCanvas();
+            // Starta med helt tom spelplan
+            grid = createEmptyGrid();
+            population = 0;
+            generation = 0;
+            updateHUD();
+            render();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
