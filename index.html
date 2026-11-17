@@ -122,25 +122,25 @@
     <header class="fixed top-0 left-0 right-0 z-20 safe-top-hud px-3 sm:px-4 pb-2 pointer-events-none">
         <div class="max-w-5xl mx-auto flex items-center justify-between gap-1.5 sm:gap-2">
             
-            <!-- Status & Mätare (Helt skarp och kompakt på iPhone) -->
-            <div class="pointer-events-auto hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-2xl px-3 sm:px-3.5 py-2 flex items-center gap-2 sm:gap-4 shrink min-w-0">
+            <!-- Status & Mätare (Adaptiv för 4-6 siffriga tal på iPhone, iPad & Desktop) -->
+            <div class="pointer-events-auto hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-2xl px-2.5 sm:px-3.5 py-2 flex items-center gap-2 sm:gap-3.5 shrink min-w-0">
                 <div class="flex items-center gap-1.5 shrink-0">
-                    <span id="status-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
-                    <span id="status-text" class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Paused</span>
+                    <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span id="status-text" class="hidden sm:inline text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Paused</span>
                 </div>
                 <div class="h-3.5 w-[1px] bg-slate-300 dark:bg-slate-700 shrink-0"></div>
                 <div class="flex items-baseline gap-1 shrink-0">
                     <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase">Gen</span>
-                    <span id="gen-count" class="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400">0</span>
+                    <span id="gen-count" class="font-mono tabular-nums text-[11px] sm:text-sm font-bold text-blue-600 dark:text-blue-400">0</span>
                 </div>
                 <div class="flex items-baseline gap-1 shrink-0">
                     <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase">Pop</span>
-                    <span id="pop-count" class="font-mono text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400">0</span>
+                    <span id="pop-count" class="font-mono tabular-nums text-[11px] sm:text-sm font-bold text-emerald-600 dark:text-emerald-400">0</span>
                 </div>
             </div>
 
             <!-- Höger snabbknappar: Quantum, Ljud, Tema, Hjälp -->
-            <div class="pointer-events-auto flex items-center gap-1.5 shrink-0">
+            <div class="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <!-- Twist-badge: Quantum Mode -->
                 <button id="btn-quantum" title="Toggle Quantum Mode (Trails & Aging)" class="hud-surface bg-white dark:bg-[#0f172a] border border-indigo-500/70 dark:border-indigo-400/70 text-indigo-600 dark:text-indigo-300 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -654,7 +654,7 @@
                 if (isRunning) {
                     togglePlay(false);
                     statusText.textContent = newPop === 0 ? 'Extinct' : 'Static';
-                    statusDot.className = 'w-2 h-2 rounded-full bg-slate-400';
+                    statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
                     showToast(newPop === 0 ? 'All life extinguished — stopped' : 'Static equilibrium reached — stopped');
                 } else {
                     showToast(newPop === 0 ? 'Grid is empty' : 'Pattern is completely static');
