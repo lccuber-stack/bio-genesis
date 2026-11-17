@@ -2011,40 +2011,6 @@
             render();
         });
 
-        // Audio Toggle
-        document.getElementById('btn-sound').addEventListener('click', () => {
-            soundEnabled = !soundEnabled;
-            const btnSound = document.getElementById('btn-sound');
-            const iconOff = document.getElementById('icon-sound-off');
-            const iconOn = document.getElementById('icon-sound-on');
-            if (soundEnabled) {
-                iconOff.classList.add('hidden');
-                iconOn.classList.remove('hidden');
-                btnSound.classList.remove('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
-                btnSound.classList.add('border-blue-500/40', 'text-blue-500');
-                playBirthNote(1.2);
-                showToast('Generative Audio ON');
-            } else {
-                iconOn.classList.add('hidden');
-                iconOff.classList.remove('hidden');
-                btnSound.classList.remove('border-blue-500/40', 'text-blue-500');
-                btnSound.classList.add('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
-                showToast('Audio Muted');
-            }
-        });
-
-        // Theme Toggle
-        document.getElementById('btn-theme').addEventListener('click', () => {
-            const html = document.documentElement;
-            const isDark = html.classList.toggle('dark');
-            const bg = isDark ? '#090d16' : '#f8fafc';
-            html.style.backgroundColor = bg;
-            document.getElementById('meta-theme-color').setAttribute('content', bg);
-            document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
-            document.getElementById('icon-moon').classList.toggle('hidden', isDark);
-            render();
-        });
-
         // Zoom Controls
         document.getElementById('btn-zoom-in').addEventListener('click', () => zoomAt(1.25));
         document.getElementById('btn-zoom-out').addEventListener('click', () => zoomAt(0.8));
@@ -2175,6 +2141,17 @@
             });
         });
 
+        // Close modals when tapping outside the card on backdrop
+        ['modal-library', 'modal-more'].forEach(modalId => {
+            const modalEl = document.getElementById(modalId);
+            modalEl.addEventListener('click', (e) => {
+                if (e.target === modalEl) modalEl.classList.add('hidden');
+            });
+        });
+        modalQuickSave.addEventListener('click', (e) => {
+            if (e.target === modalQuickSave) closeQuickSaveModal();
+        });
+
         // Speed, Rule & Wrap Controls
         document.getElementById('speed-slider').addEventListener('input', (e) => {
             targetFPS = Number(e.target.value);
@@ -2192,16 +2169,6 @@
         document.getElementById('wrap-toggle').addEventListener('change', (e) => {
             wrapEdges = e.target.checked;
             saveUserSettings();
-        });
-
-        document.getElementById('rule-select').addEventListener('change', (e) => {
-            currentRule = e.target.value;
-            parseRuleString(currentRule);
-            showToast(`Ruleset: ${currentRule}`);
-        });
-
-        document.getElementById('wrap-toggle').addEventListener('change', (e) => {
-            wrapEdges = e.target.checked;
         });
 
         // Keyboard Shortcuts (Desktop)
@@ -2234,6 +2201,9 @@
         }
 
         document.getElementById('btn-start-game').addEventListener('click', dismissWelcomeScreen);
+        welcomeScreen.addEventListener('click', (e) => {
+            if (e.target === welcomeScreen) dismissWelcomeScreen();
+        });
         document.getElementById('btn-help').addEventListener('click', () => {
             setRunningState(false);
             welcomeScreen.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
