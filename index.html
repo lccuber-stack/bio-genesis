@@ -2257,8 +2257,51 @@
         });
 
         // --- INITIERING ---
+        // Säkerställ att hemskärmsappen (PWA) alltid hämtar senaste versionen vid start/återaktivering
+        // utan att röra sparade designer i localStorage
+        const APP_BUILD_VERSION = '2026.11.17.1';
+        const LAST_SYNC_KEY = 'biogenesis_last_sync_ts';
+
+        async function checkAndRefreshLatestVersion(forceReload = false) {
+            try {
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(k => caches.delete(k)));
+                }
+                const isStandalone = window.navigator.standalone === true ||
+                    window.matchMedia('(display-mode: standalone)').matches;
+
+                if (isStandalone && forceReload) {
+                    const lastSync = parseInt(sessionStorage.getItem(LAST_SYNC_KEY) || '0', 10);
+                    const now = Date.now();
+                    // Ladda om högst en gång per 30 sekunder för att undvika omladdningsloopar
+                    if (now - lastSync > 30000) {
+                        sessionStorage.setItem(LAST_SYNC_KEY, String(now));
+                        const baseUrl = window.location.href.split('#')[0].split('?')[0];
+                        const currentHash = window.location.hash || '';
+                        window.location.replace(`${baseUrl}?v=${now}${currentHash}`);
+                    }
+                }
+            } catch (e) {
+                // Ignorera nätverksfel i offline-läge så appen och sparade designer alltid fungerar
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                checkAndRefreshLatestVersion(true);
+            }
+        });
+
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                checkAndRefreshLatestVersion(true);
+            }
+        });
+
         window.addEventListener('resize', resizeCanvas);
         window.onload = () => {
+            checkAndRefreshLatestVersion(false);
             generateHomeScreenIcon();
             updateSavedTabCount();
             buildPatternGallery('all');
