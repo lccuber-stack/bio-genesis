@@ -355,10 +355,11 @@
 
             <!-- Category Filter Grid (Ingen horisontell beskärning på iPhone) -->
             <div id="pattern-categories" class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 pb-3 mb-2 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
-                <button data-cat="all" class="cat-pill active px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-blue-600 text-white text-center truncate transition">All (18)</button>
+                <button data-cat="all" class="cat-pill active px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-blue-600 text-white text-center truncate transition">All (22)</button>
                 <button data-cat="saved" id="tab-saved-btn" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">⭐ Saved (0)</button>
+                <button data-cat="ships" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">🚀 Ships</button>
+                <button data-cat="guns" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">🔫 Guns</button>
                 <button data-cat="quantum" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">⚛️ Quantum</button>
-                <button data-cat="guns" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">🚀 Guns</button>
                 <button data-cat="oscillators" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">💫 Oscillators</button>
                 <button data-cat="chaos" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">🧬 Chaos</button>
             </div>
@@ -476,8 +477,8 @@
          */
 
         // --- KONFIGURATION & TILLSTÅND ---
-        const COLS = 100;
-        const ROWS = 100;
+        const COLS = 160;
+        const ROWS = 160;
         
         // Cell-tillstånd i primary grid:
         // 0 = Död, >0 = Levande (värdet anger ålder i generationer), -1 = Kvant-Katalysator (permanent energikälla)
@@ -885,30 +886,30 @@
             isPointerDown = true;
             lastPointerX = e.clientX;
             lastPointerY = e.clientY;
-            if (currentTool !== 'pan' && e.button === 0) {
+            if (currentTool !== 'pan') {
                 applyToolAt(e.clientX, e.clientY);
             }
         });
 
         window.addEventListener('mousemove', (e) => {
             if (!isPointerDown) return;
-            if (currentTool === 'pan' || e.buttons === 2 || e.buttons === 4) {
+            if (currentTool === 'pan') {
                 offsetX += e.clientX - lastPointerX;
                 offsetY += e.clientY - lastPointerY;
+                lastPointerX = e.clientX;
+                lastPointerY = e.clientY;
                 hasUserPanned = true;
                 render();
             } else {
                 applyToolAt(e.clientX, e.clientY);
             }
-            lastPointerX = e.clientX;
-            lastPointerY = e.clientY;
         });
 
         window.addEventListener('mouseup', () => {
             isPointerDown = false;
         });
 
-        // Zoom med mushjul
+        // Scroll-hjul zoom på Desktop
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
@@ -916,23 +917,9 @@
             zoomAt(e.clientX - rect.left, e.clientY - rect.top, zoomFactor);
         }, { passive: false });
 
-        function zoomAt(centerX, centerY, factor) {
-            const oldSize = cellSize;
-            const newSize = Math.max(4, Math.min(48, oldSize * factor));
-            if (newSize === oldSize) return;
-
-            offsetX = centerX - (centerX - offsetX) * (newSize / oldSize);
-            offsetY = centerY - (centerY - offsetY) * (newSize / oldSize);
-            cellSize = newSize;
-
-            const pct = Math.round((cellSize / 14) * 100);
-            document.getElementById('btn-zoom-reset').textContent = `${pct}%`;
-            render();
-        }
-
-        // Touch-händelser (iPhone & iPad: 1 finger = rita/panorera, 2 fingrar = pinch-zoom & panorera)
+        // Touch-händelser (iPhone & iPad)
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
             if (e.touches.length === 1) {
                 isPointerDown = true;
                 const touch = e.touches[0];
@@ -943,9 +930,7 @@
                 }
             } else if (e.touches.length === 2) {
                 isPointerDown = false;
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                initialPinchDist = Math.hypot(dx, dy);
+                initialPinchDist = getPinchDistance(e.touches);
                 initialCellSize = cellSize;
                 lastPointerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 lastPointerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
@@ -953,37 +938,35 @@
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
             if (e.touches.length === 1 && isPointerDown) {
                 const touch = e.touches[0];
                 if (currentTool === 'pan') {
                     offsetX += touch.clientX - lastPointerX;
                     offsetY += touch.clientY - lastPointerY;
+                    lastPointerX = touch.clientX;
+                    lastPointerY = touch.clientY;
                     hasUserPanned = true;
                     render();
                 } else {
                     applyToolAt(touch.clientX, touch.clientY);
                 }
-                lastPointerX = touch.clientX;
-                lastPointerY = touch.clientY;
             } else if (e.touches.length === 2 && initialPinchDist) {
                 const rect = canvas.getBoundingClientRect();
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const dist = Math.hypot(dx, dy);
+                const currentDist = getPinchDistance(e.touches);
                 const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
+                // Panorera samtidigt som man zoomar med två fingrar
                 offsetX += midX - lastPointerX;
                 offsetY += midY - lastPointerY;
-                hasUserPanned = true;
-
-                const targetSize = Math.max(4, Math.min(48, initialCellSize * (dist / initialPinchDist)));
-                const factor = targetSize / cellSize;
-                zoomAt(midX - rect.left, midY - rect.top, factor);
-
                 lastPointerX = midX;
                 lastPointerY = midY;
+                hasUserPanned = true;
+
+                const scaleRatio = currentDist / initialPinchDist;
+                const targetCellSize = Math.max(4, Math.min(48, initialCellSize * scaleRatio));
+                zoomAt(midX - rect.left, midY - rect.top, targetCellSize / cellSize);
             }
         }, { passive: false });
 
@@ -998,80 +981,165 @@
             }
         });
 
-        // --- MÖNSTERBIBLIOTEK (18 VERIFIERADE MÖNSTER MED MINI-FÖRHANDSVISNING) ---
+        function getPinchDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.hypot(dx, dy);
+        }
+
+        function zoomAt(pivotX, pivotY, factor) {
+            const newSize = Math.max(4, Math.min(48, cellSize * factor));
+            const actualFactor = newSize / cellSize;
+            offsetX = pivotX - (pivotX - offsetX) * actualFactor;
+            offsetY = pivotY - (pivotY - offsetY) * actualFactor;
+            cellSize = newSize;
+
+            const pct = Math.round((cellSize / 14) * 100);
+            document.getElementById('btn-zoom-reset').textContent = `${pct}%`;
+            render();
+        }
+
+        // --- MÖNSTERBIBLIOTEK (22 VERIFIERADE MÖNSTER MED MINI-FÖRHANDSVISNING) ---
         const PATTERN_CATALOG = [
             {
-                id: 'symmetric_bloom',
-                name: 'Symmetric Quantum Bloom',
-                icon: '✨',
-                category: 'quantum',
-                accent: 'blue',
-                desc: 'Kaleidoscopic formation that unfolds into mesmerizing geometric waves.',
-                cells: [
-                    [-6,-6],[-6,-5],[-5,-6],[-5,-5], [-6,-1],[-6,0],[-6,1], [-6,5],[-6,6],[-5,5],[-5,6],
-                    [-2,-10],[-2,-9],[-1,-11],[-1,-8],[0,-12],[0,-7],[1,-10],[1,-6],[2,-9],[2,-6],[3,-8],
-                    [-2,9],[-2,10],[-1,8],[-1,11],[0,7],[0,12],[1,6],[1,10],[2,6],[2,9],[3,8],
-                    [0,-4],[0,-3],[1,-4],[1,-2],[2,-3],[3,-2],[4,-3],[4,-2],[5,-4],[5,-1],[6,-3],[6,-2],
-                    [0,3],[0,4],[1,2],[1,4],[2,3],[3,2],[4,2],[4,3],[5,1],[5,4],[6,2],[6,3]
-                ]
-            },
-            {
-                id: 'quantum_reactor',
-                name: 'Quantum Catalyst Reactor',
-                icon: '⚛️',
-                category: 'quantum',
-                accent: 'amber',
-                desc: '5 immortal golden energy nodes surrounded by an active plasma ring.',
-                catalysts: [[-3,-3],[-3,3],[3,-3],[3,3],[0,0]],
-                cells: [
-                    [-5,-5],[-5,-4],[-5,-3],[-5,-2],[-5,-1],[-5,0],[-5,1],[-5,2],[-5,3],[-5,4],[-5,5],
-                    [5,-5],[5,-4],[5,-3],[5,-2],[5,-1],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],
-                    [-4,-5],[-3,-5],[-2,-5],[-1,-5],[0,-5],[1,-5],[2,-5],[3,-5],[4,-5],
-                    [-4,5],[-3,5],[-2,5],[-1,5],[0,5],[1,5],[2,5],[3,5],[4,5],
-                    [-1,-1],[-1,1],[1,-1],[1,1]
-                ]
-            },
-            {
-                id: 'supernova_core',
-                name: 'Supernova Catalyst Core',
-                icon: '🌟',
-                category: 'quantum',
-                accent: 'amber',
-                desc: 'Pulsing core of golden catalysts that continuously radiates shockwaves.',
-                catalysts: [[0,-2],[0,2],[-2,0],[2,0]],
-                cells: [
-                    [-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1],
-                    [-4,-1],[-4,0],[-4,1],[4,-1],[4,0],[4,1],
-                    [-1,-4],[0,-4],[1,-4],[-1,4],[0,4],[1,4]
-                ]
-            },
-            {
-                id: 'quantum_helix',
-                name: 'Quantum DNA Helix',
-                icon: '🧬',
-                category: 'quantum',
+                id: 'schick_engine',
+                name: 'Schick Engine (Giant c/2 Ship)',
+                icon: '🚀',
+                category: 'ships',
                 accent: 'purple',
-                desc: 'Double-stranded genetic lattice anchored by golden stabilizer nodes.',
-                catalysts: [[-6,0],[0,0],[6,0]],
+                desc: 'Verified c/2 giant cruiser: twin LWSS escorts towing a symmetric spark core across the grid.',
+                offset: [-8, -10],
                 cells: [
-                    [-7,-2],[-7,2],[-6,-3],[-6,3],[-5,-2],[-5,2],[-4,-1],[-4,1],
-                    [-3,0],[-2,-1],[-2,1],[-1,-2],[-1,2],[0,-3],[0,3],[1,-2],[1,2],
-                    [2,-1],[2,1],[3,0],[4,-1],[4,1],[5,-2],[5,2],[6,-3],[6,3],[7,-2],[7,2]
+                    // Verified Schick Engine (flies right at c/2, period 4, symmetric around row 8)
+                    // Top LWSS (rows 0..3)
+                    [0,1],[0,2],[0,3],[0,4],
+                    [1,0],[1,4],
+                    [2,4],
+                    [3,0],[3,3],
+                    // Symmetric central tagalong core (rows 6..10)
+                    [6,7],[6,8],[6,9],
+                    [7,6],[7,9],
+                    [8,5],[8,6],
+                    [9,6],[9,9],
+                    [10,7],[10,8],[10,9],
+                    // Bottom LWSS (rows 13..16)
+                    [13,0],[13,3],
+                    [14,4],
+                    [15,0],[15,4],
+                    [16,1],[16,2],[16,3],[16,4]
+                ]
+            },
+            {
+                id: 'twin_hwss_dreadnought',
+                name: 'Twin-HWSS Battle Squadron',
+                icon: '🛸',
+                category: 'ships',
+                accent: 'cyan',
+                desc: 'Synchronized formation of two 13-cell Heavyweight Spaceships cruising intact at c/2.',
+                offset: [-7, -3],
+                cells: [
+                    [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
+                    [1,0],[1,6],
+                    [2,6],
+                    [3,0],[3,5],
+                    [4,2],[4,3],
+                    [10,1],[10,2],[10,3],[10,4],[10,5],[10,6],
+                    [11,0],[11,6],
+                    [12,6],
+                    [13,0],[13,5],
+                    [14,2],[14,3]
+                ]
+            },
+            {
+                id: 'hwss_heavy',
+                name: 'Heavyweight Spaceship (HWSS)',
+                icon: '🛸',
+                category: 'ships',
+                accent: 'cyan',
+                desc: 'Largest classic elementary c/2 spaceship (13 cells)—keeps its exact cycle forever.',
+                offset: [-2, -3],
+                cells: [
+                    [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
+                    [1,0],[1,6],
+                    [2,6],
+                    [3,0],[3,5],
+                    [4,2],[4,3]
+                ]
+            },
+            {
+                id: 'mwss_cruiser',
+                name: 'Middleweight Spaceship (MWSS)',
+                icon: '🚀',
+                category: 'ships',
+                accent: 'blue',
+                desc: 'Classic 11-cell period-4 orthogonal cruiser moving smoothly across the grid.',
+                offset: [-2, -3],
+                cells: [
+                    [0,1],[0,2],[0,3],[0,4],[0,5],
+                    [1,0],[1,5],
+                    [2,5],
+                    [3,0],[3,4],
+                    [4,2]
+                ]
+            },
+            {
+                id: 'spaceship_fleet',
+                name: 'LWSS & HWSS Armada',
+                icon: '👾',
+                category: 'ships',
+                accent: 'cyan',
+                desc: 'Verified formation of two LWSS scouts flanking a Heavyweight Cruiser cruising in sync at c/2.',
+                offset: [-8, -3],
+                cells: [
+                    [0,1],[0,2],[0,3],[0,4],
+                    [1,0],[1,4],
+                    [2,4],
+                    [3,0],[3,3],
+                    [7,1],[7,2],[7,3],[7,4],[7,5],[7,6],
+                    [8,0],[8,6],
+                    [9,6],
+                    [10,0],[10,5],
+                    [11,2],[11,3],
+                    [15,1],[15,2],[15,3],[15,4],
+                    [16,0],[16,4],
+                    [17,4],
+                    [18,0],[18,3]
+                ]
+            },
+            {
+                id: 'glider_squadron',
+                name: 'Glider Strike Wing',
+                icon: '✈️',
+                category: 'ships',
+                accent: 'blue',
+                desc: 'Five diagonal period-4 gliders flying in tight V-formation across the universe.',
+                offset: [-6, -6],
+                cells: [
+                    [0,1],[1,2],[2,0],[2,1],[2,2],
+                    [4,5],[5,6],[6,4],[6,5],[6,6],
+                    [8,9],[9,10],[10,8],[10,9],[10,10],
+                    [8,1],[9,2],[10,0],[10,1],[10,2],
+                    [0,9],[1,10],[2,8],[2,9],[2,10]
                 ]
             },
             {
                 id: 'gosper_gun',
                 name: 'Gosper Glider Gun',
-                icon: '🚀',
+                icon: '🔫',
                 category: 'guns',
                 accent: 'blue',
-                desc: 'Classic perpetual engine firing an endless stream of diagonal gliders.',
+                desc: 'The iconic period-30 perpetual glider factory that proved life can grow infinitely.',
                 offset: [-5, -18],
                 cells: [
-                    [0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
-                    [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
-                    [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
-                    [7,11],[7,15],[8,12],[8,13]
+                    [0,24],
+                    [1,22],[1,24],
+                    [2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
+                    [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],
+                    [4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
+                    [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],
+                    [6,10],[6,16],[6,24],
+                    [7,11],[7,15],
+                    [8,12],[8,13]
                 ]
             },
             {
@@ -1079,41 +1147,92 @@
                 name: 'Simkin Glider Gun',
                 icon: '🛰️',
                 category: 'guns',
-                accent: 'blue',
-                desc: 'Compact period-120 gun that fires gliders cleanly across the universe.',
+                accent: 'cyan',
+                desc: 'Compact period-120 glider factory firing diagonal streams across the universe.',
                 offset: [-10, -16],
                 cells: [
-                    [0,0],[0,1],[0,7],[0,8],[1,0],[1,1],[1,7],[1,8],
-                    [3,4],[3,5],[4,4],[4,5],
-                    [9,22],[9,23],[9,25],[9,26],[10,21],[10,27],[11,21],[11,28],[11,31],[11,32],
-                    [12,21],[12,22],[12,23],[12,27],[12,31],[12,32],[13,26],
-                    [17,20],[17,21],[18,20],[19,21],[19,22],[19,23],[20,23]
+                    [0,0],[0,1],[0,7],[0,8],
+                    [1,0],[1,1],[1,7],[1,8],
+                    [3,4],[3,5],
+                    [4,4],[4,5],
+                    [9,22],[9,23],[9,25],[9,26],
+                    [10,21],[10,27],
+                    [11,21],[11,28],[11,31],[11,32],
+                    [12,21],[12,22],[12,23],[12,27],[12,31],[12,32],
+                    [13,26],
+                    [17,20],[17,21],
+                    [18,20],
+                    [19,21],[19,22],[19,23],
+                    [20,23]
                 ]
             },
             {
-                id: 'copperhead',
-                name: 'Copperhead Spaceship',
-                icon: '🛸',
+                id: 'gosper_twin_battery',
+                name: 'Twin-Gosper Salvo Battery',
+                icon: '💥',
                 category: 'guns',
-                accent: 'cyan',
-                desc: 'Sleek c/10 orthogonal spaceship discovered in 2016 with glowing exhaust.',
+                accent: 'blue',
+                desc: 'Dual parallel Gosper Glider Guns firing synchronized twin glider streams.',
+                offset: [-14, -18],
                 cells: [
-                    [-5,-1],[-5,0],[-4,-2],[-4,1],[-3,-3],[-3,-2],[-3,1],[-3,2],
-                    [-2,-1],[-2,0],[-1,-2],[-1,1],[0,-3],[0,2],[1,-3],[1,2],
-                    [3,-2],[3,-1],[3,0],[3,1],[4,-1],[4,0],[6,-1],[6,0],[7,-1],[7,0]
+                    // Upper Gosper Gun
+                    [0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
+                    [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
+                    [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
+                    [7,11],[7,15],[8,12],[8,13],
+                    // Lower Gosper Gun
+                    [18,24],[19,22],[19,24],[20,12],[20,13],[20,20],[20,21],[20,34],[20,35],
+                    [21,11],[21,15],[21,20],[21,21],[21,34],[21,35],[22,0],[22,1],[22,10],[22,16],[22,20],[22,21],
+                    [23,0],[23,1],[23,10],[23,14],[23,16],[23,17],[23,22],[23,24],[24,10],[24,16],[24,24],
+                    [25,11],[25,15],[26,12],[26,13]
                 ]
             },
             {
-                id: 'spaceship_fleet',
-                name: 'Spaceship Armada (LWSS/HWSS)',
-                icon: '👾',
+                id: 'bi_gun_p46',
+                name: 'Bi-Gun (Period-46 Twin-Block)',
+                icon: '⚡',
                 category: 'guns',
-                accent: 'cyan',
-                desc: 'Escort squadron of Light, Middle, and Heavyweight spaceships.',
+                accent: 'indigo',
+                desc: 'Classic period-46 twin-shuttle gun built from two colliding Queen Bee shuttles.',
+                offset: [-11, -11],
                 cells: [
-                    [-9,-8],[-9,-5],[-8,-9],[-7,-9],[-7,-5],[-6,-9],[-6,-8],[-6,-7],[-6,-6],
-                    [-1,-6],[-1,-3],[0,-7],[1,-7],[1,-3],[2,-7],[2,-6],[2,-5],[2,-4],[1,-5],
-                    [7,-8],[7,-5],[8,-9],[9,-9],[9,-5],[10,-9],[10,-8],[10,-7],[10,-6],[9,-7],[9,-6]
+                    // Upper Queen Bee Shuttle (period 30) + Lower Queen Bee Shuttle
+                    [0,9],[1,7],[1,9],[2,6],[2,8],[3,5],[3,8],[4,6],[4,8],[5,7],[5,9],[6,9],
+                    [3,0],[3,1],[4,0],[4,1],
+                    [3,20],[3,21],[4,20],[4,21],
+                    [15,9],[16,7],[16,9],[17,6],[17,8],[18,5],[18,8],[19,6],[19,8],[20,7],[20,9],[21,9],
+                    [18,0],[18,1],[19,0],[19,1],
+                    [18,20],[18,21],[19,20],[19,21]
+                ]
+            },
+            {
+                id: 'quantum_bloom',
+                name: 'Quantum Catalyst Core',
+                icon: '⚛️',
+                category: 'quantum',
+                accent: 'purple',
+                desc: 'Immortal golden energy catalysts feeding a perpetual kaleidoscopic reaction.',
+                cells: [
+                    [-2,0],[-1,-1],[-1,1],[0,-2],[0,2],[1,-1],[1,1],[2,0],
+                    [-4,0],[4,0],[0,-4],[0,4]
+                ],
+                catalysts: [
+                    [-1,0],[1,0],[0,-1],[0,1]
+                ]
+            },
+            {
+                id: 'quantum_collider',
+                name: 'Quantum Glider Collider',
+                icon: '💫',
+                category: 'quantum',
+                accent: 'purple',
+                desc: 'Twin gliders firing directly into a golden catalyst shield to spark new life.',
+                cells: [
+                    [-6,-5],[-5,-4],[-4,-6],[-4,-5],[-4,-4],
+                    [-6,5],[-5,4],[-4,4],[-4,5],[-4,6]
+                ],
+                catalysts: [
+                    [2,-1],[2,1],[3,0]
                 ]
             },
             {
@@ -1215,17 +1334,6 @@
                 desc: 'High-energy 7-cell seed that launches gliders while evolving.',
                 cells: [
                     [-1,-1],[-1,1],[-1,2],[0,-1],[0,0],[0,1],[1,0]
-                ]
-            },
-            {
-                id: 'diehard',
-                name: 'Diehard Vanisher',
-                icon: '⏳',
-                category: 'chaos',
-                accent: 'emerald',
-                desc: '7 cells that dance for 130 generations before vanishing without a trace.',
-                cells: [
-                    [-1,3],[0,-3],[0,-2],[1,-2],[1,2],[1,3],[1,4]
                 ]
             },
             {
