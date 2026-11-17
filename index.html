@@ -583,6 +583,7 @@
             const nextGrid = createEmptyGrid();
             let newPop = 0;
             let births = 0;
+            let changed = false;
 
             for (let r = 0; r < ROWS; r++) {
                 for (let c = 0; c < COLS; c++) {
@@ -630,6 +631,7 @@
                         } else {
                             // Dör -> Lämna kvant-spår
                             nextGrid[r][c] = 0;
+                            changed = true;
                             if (quantumMode) trailGrid[r][c] = 0.85;
                         }
                     } else {
@@ -638,9 +640,26 @@
                             nextGrid[r][c] = 1; // Föds (ålder 1)
                             newPop++;
                             births++;
+                            changed = true;
                         }
                     }
                 }
+            }
+
+            // Om inga celler föddes eller dog har systemet stannat av (utdött eller statiskt)
+            if (!changed) {
+                historyStack.pop(); // Ta bort duplicerat steg från historiken
+                population = newPop;
+                updateHUD();
+                if (isRunning) {
+                    togglePlay(false);
+                    statusText.textContent = newPop === 0 ? 'Extinct' : 'Static';
+                    statusDot.className = 'w-2 h-2 rounded-full bg-slate-400';
+                    showToast(newPop === 0 ? 'All life extinguished — stopped' : 'Static equilibrium reached — stopped');
+                } else {
+                    showToast(newPop === 0 ? 'Grid is empty' : 'Pattern is completely static');
+                }
+                return;
             }
 
             grid = nextGrid;
