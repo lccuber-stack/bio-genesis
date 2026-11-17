@@ -1143,7 +1143,7 @@
         let strokeDrawValue = null; // 1 = paint cells, 0 = erase cells during current stroke
         let initialPinchDist = null;
         let initialPinchCellSize = DEFAULT_CELL_SIZE;
-
+        let lastTouchTimestamp = 0;
         function screenToCell(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
             const c = Math.floor((clientX - rect.left - cameraX) / cellSize);
@@ -1225,6 +1225,7 @@
         });
 
         canvas.addEventListener('mousedown', (e) => {
+            if (Date.now() - lastTouchTimestamp < 600) return;
             if (e.button === 1 || e.button === 2) {
                 e.preventDefault();
                 isPanning = true;
@@ -1268,6 +1269,8 @@
         }, { passive: false });
 
         canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            lastTouchTimestamp = Date.now();
             if (e.touches.length === 2) {
                 isPointerDown = false;
                 isPanning = true;
@@ -1287,9 +1290,11 @@
                 pushHistory();
                 applyToolAt(t.clientX, t.clientY, true);
             }
-        }, { passive: true });
+        }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            lastTouchTimestamp = Date.now();
             if (e.touches.length === 2 && initialPinchDist) {
                 const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
@@ -1313,9 +1318,10 @@
                     applyToolAt(t.clientX, t.clientY);
                 }
             }
-        }, { passive: true });
+        }, { passive: false });
 
-        canvas.addEventListener('touchend', () => {
+        canvas.addEventListener('touchend', (e) => {
+            lastTouchTimestamp = Date.now();
             if (isPointerDown && generation === 0) {
                 captureInitialSnapshot();
             }
