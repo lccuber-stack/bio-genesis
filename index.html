@@ -159,7 +159,7 @@
                 </button>
 
                 <button id="btn-help" title="How to Play" class="hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-2xl p-2 sm:p-2.5 text-slate-800 dark:text-white active:scale-95 transition flex items-center justify-center">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" d="M8.5 8.5a3.5 3.5 0 016.8 1.2c0 2.3-3.3 3.1-3.3 5.1m.05 3.7h.01"/></svg>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" d="M8.5 8.5a3.5 3.5 0 016.8 1.2c0 2.3-3.3 3.1-3.3 5.1m.05 3.7h.01"/></svg>
                 </button>
             </div>
         </div>
@@ -1014,9 +1014,18 @@
         }
 
         // --- CANVAS RENDERER ---
+        let lastViewportW = 0;
+        let lastViewportH = 0;
+
         function resizeCanvas() {
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.parentElement.getBoundingClientRect();
+            if (lastViewportW > 0 && lastViewportH > 0) {
+                cameraX += (rect.width - lastViewportW) / 2;
+                cameraY += (rect.height - lastViewportH) / 2;
+            }
+            lastViewportW = rect.width;
+            lastViewportH = rect.height;
             canvas.width = Math.floor(rect.width * dpr);
             canvas.height = Math.floor(rect.height * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1025,6 +1034,8 @@
 
         function centerCamera() {
             const rect = canvas.parentElement.getBoundingClientRect();
+            lastViewportW = rect.width;
+            lastViewportH = rect.height;
             const totalW = GRID_SIZE * cellSize;
             const totalH = GRID_SIZE * cellSize;
             cameraX = (rect.width - totalW) / 2;
