@@ -141,9 +141,9 @@
 
             <!-- Höger snabbknappar: Quantum, Ljud, Tema, Hjälp -->
             <div class="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
-                <!-- Twist-badge: Quantum Mode -->
-                <button id="btn-quantum" title="Toggle Quantum Mode (Trails & Aging)" class="hud-surface bg-white dark:bg-[#0f172a] border border-indigo-500/70 dark:border-indigo-400/70 text-indigo-600 dark:text-indigo-300 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
-                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <!-- Twist-badge: Quantum Mode (Tydlig visuell skillnad på både iPhone-ikon och Desktop-badge) -->
+                <button id="btn-quantum" title="Toggle Quantum Mode (Trails & Aging)" class="hud-surface bg-indigo-600 border border-indigo-400 text-white shadow-md shadow-indigo-500/35 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+                    <svg id="icon-quantum-bolt" class="w-4 h-4 shrink-0" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     <span class="hidden sm:inline" id="quantum-label">Quantum: ON</span>
                 </button>
 
@@ -1875,7 +1875,19 @@
         // Quantum-läge toggle
         document.getElementById('btn-quantum').addEventListener('click', () => {
             quantumMode = !quantumMode;
+            const btn = document.getElementById('btn-quantum');
+            const bolt = document.getElementById('icon-quantum-bolt');
             document.getElementById('quantum-label').textContent = quantumMode ? 'Quantum: ON' : 'Classic';
+
+            if (quantumMode) {
+                btn.className = 'hud-surface bg-indigo-600 border border-indigo-400 text-white shadow-md shadow-indigo-500/35 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition';
+                bolt.setAttribute('fill', 'currentColor');
+            } else {
+                btn.className = 'hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition';
+                bolt.setAttribute('fill', 'none');
+            }
+
+            render();
             showToast(quantumMode ? 'Quantum Mode: Aging & trails enabled' : 'Classic mode enabled');
         });
 
