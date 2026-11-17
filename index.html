@@ -12,6 +12,7 @@
     <meta id="meta-theme-color" name="theme-color" content="#090d16">
     <link id="app-icon-link" rel="icon" type="image/png">
     <link id="apple-touch-icon-link" rel="apple-touch-icon" sizes="180x180">
+    <link id="manifest-link" rel="manifest">
     <title>Bio Genesis</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -468,181 +469,453 @@
         Message
     </div>
 
+    <!-- INSTALL APP / ADD TO HOME SCREEN PROMPT (Shown automatically in browser when not installed) -->
+    <div id="install-banner" class="fixed left-3 right-3 sm:left-1/2 sm:-translate-x-1/2 sm:max-w-md z-40 hidden transition-all duration-300" style="bottom: calc(max(env(safe-area-inset-bottom, 0px), 10px) + 72px);">
+        <div class="hud-surface bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-md border border-blue-500/40 rounded-2xl p-3.5 shadow-2xl flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2 mb-0.5">
+                    <h3 class="text-xs font-bold text-slate-900 dark:text-white">Install Bio Genesis App</h3>
+                    <button id="btn-dismiss-install" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-0.5 rounded-lg transition" title="Dismiss">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <p id="install-banner-desc" class="text-[11px] leading-snug text-slate-600 dark:text-slate-300 mb-2">
+                    Add Bio Genesis to your Home Screen for full-screen mode and instant access.
+                </p>
+                <div id="install-action-area" class="flex items-center gap-2">
+                    <button id="btn-trigger-install" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm active:scale-95 transition">
+                        Add to Home Screen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         /**
-         * BIO-GENESIS: QUANTUM LIFE
-         * Professionell webbapp för iPhone, iPad och Desktop.
-         * Innehåller Conways Game of Life med unika kvant-mekaniker:
-         * 1. Cell-åldrande (färgskiftning från ung cyan till mogen indigo/guld).
-         * 2. Kvant-spår (efterglöd där celler nyss dött).
-         * 3. Katalysator-noder (odödliga energikällor som kontinuerligt föder liv).
-         * 4. Tidsmaskin (spolning bakåt upp till 50 generationer).
-         * 5. Generativ pentatonisk ljudsyntes via Web Audio API.
+         * BIO GENESIS — Quantum Game of Life Engine
+         * Single-file self-contained architecture with B3/S23 + custom rules,
+         * Quantum Aging & Catalysts, Generative Web Audio, Undo History,
+         * URL Share Encoding, Local Saved Library & PWA Install Prompt.
          */
 
-        // --- KONFIGURATION & TILLSTÅND ---
-        const COLS = 160;
-        const ROWS = 160;
-        
-        // Cell-tillstånd i primary grid:
-        // 0 = Död, >0 = Levande (värdet anger ålder i generationer), -1 = Kvant-Katalysator (permanent energikälla)
-        let grid = createEmptyGrid();
-        // Trail grid lagrar energi-ekon (0.0 till 1.0) för visuell svans
-        let trailGrid = Array.from({ length: ROWS }, () => new Float32Array(COLS));
-        // Historik-stack för att kunna stega bakåt i tiden
-        let historyStack = [];
-        const MAX_HISTORY = 50;
+        // --- AUTOMATIC HOME SCREEN FRESHNESS SYNC ---
+        (function initHomeScreenAutoRefresh() {
+            const VERSION_PARAM = 'v';
+            let lastRefreshCheck = Date.now();
 
-        let isRunning = false;
+            async function checkForLatestVersion() {
+                if (Date.now() - lastRefreshCheck < 4000) return;
+                lastRefreshCheck = Date.now();
+                try {
+                    const cleanUrl = window.location.href.split('#')[0].split('?')[0];
+                    if (!cleanUrl.startsWith('http')) return;
+                    if ('caches' in window) {
+                        const keys = await caches.keys();
+                        await Promise.all(keys.map(k => caches.delete(k)));
+                    }
+                    const res = await fetch(`${cleanUrl}?${VERSION_PARAM}=${Date.now()}`, { cache: 'no-store' });
+                    if (!res.ok) return;
+                    const latestHtml = await res.text();
+                    const prevHtml = sessionStorage.getItem('biogenesis_cached_html');
+                    if (prevHtml && prevHtml !== latestHtml) {
+                        sessionStorage.setItem('biogenesis_cached_html', latestHtml);
+                        const hash = window.location.hash || '';
+                        window.location.replace(`${cleanUrl}?${VERSION_PARAM}=${Date.now()}${hash}`);
+                    } else {
+                        sessionStorage.setItem('biogenesis_cached_html', latestHtml);
+                    }
+                } catch (e) {
+                    // Offline fallback: keep running smoothly with saved local data
+                }
+            }
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') checkForLatestVersion();
+            });
+            window.addEventListener('pageshow', (e) => {
+                if (e.persisted) checkForLatestVersion();
+            });
+        })();
+
+        // --- DYNAMIC APP ICON & PWA MANIFEST GENERATOR ---
+        function generateAppIconsAndManifest() {
+            try {
+                const svgEl = document.getElementById('brand-app-icon');
+                if (!svgEl) return;
+                const serializer = new XMLSerializer();
+                const svgString = serializer.serializeToString(svgEl);
+                const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(svgBlob);
+
+                const img = new Image();
+                img.onload = () => {
+                    const c = document.createElement('canvas');
+                    c.width = 180;
+                    c.height = 180;
+                    const ctx = c.getContext('2d');
+                    ctx.drawImage(img, 0, 0, 180, 180);
+                    const pngDataUrl = c.toDataURL('image/png');
+
+                    document.getElementById('apple-touch-icon-link').href = pngDataUrl;
+                    document.getElementById('app-icon-link').href = pngDataUrl;
+
+                    // Generate dynamic Web App Manifest for Android / Desktop one-click PWA install
+                    const baseStartUrl = window.location.href.split('#')[0].split('?')[0];
+                    const manifestObj = {
+                        name: 'Bio Genesis — Quantum Game of Life',
+                        short_name: 'Bio Genesis',
+                        description: 'Create and evolve digital life on an infinite quantum grid.',
+                        start_url: baseStartUrl,
+                        display: 'standalone',
+                        background_color: '#090d16',
+                        theme_color: '#090d16',
+                        icons: [
+                            { src: pngDataUrl, sizes: '180x180', type: 'image/png', purpose: 'any maskable' }
+                        ]
+                    };
+                    const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+                    const manifestLink = document.getElementById('manifest-link');
+                    if (manifestLink) manifestLink.href = URL.createObjectURL(manifestBlob);
+
+                    URL.revokeObjectURL(url);
+                };
+                img.src = url;
+            } catch (e) {
+                // Fallback if SVG serialization is blocked
+            }
+        }
+
+        // --- INSTALL APP / ADD TO HOME SCREEN PROMPT ---
+        let deferredInstallPrompt = null;
+        const installBanner = document.getElementById('install-banner');
+        const installBannerDesc = document.getElementById('install-banner-desc');
+        const installActionArea = document.getElementById('install-action-area');
+        const INSTALL_DISMISSED_KEY = 'biogenesis_install_dismissed_v1';
+
+        function isAppInstalledStandalone() {
+            return window.navigator.standalone === true ||
+                window.matchMedia('(display-mode: standalone)').matches;
+        }
+
+        function isIosDevice() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        function showInstallPromptIfEligible() {
+            if (isAppInstalledStandalone()) return;
+            if (sessionStorage.getItem(INSTALL_DISMISSED_KEY) === 'true') return;
+
+            if (deferredInstallPrompt) {
+                installBannerDesc.textContent = 'Install Bio Genesis on your device for full-screen gameplay and offline access.';
+                installActionArea.classList.remove('hidden');
+                installBanner.classList.remove('hidden');
+            } else if (isIosDevice()) {
+                installBannerDesc.innerHTML = 'Tap <span class="inline-flex items-center align-middle px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-sky-500 font-semibold mx-0.5">Share ↑</span> in Safari, then choose <strong class="text-slate-900 dark:text-white">Add to Home Screen</strong>.';
+                installActionArea.classList.add('hidden');
+                installBanner.classList.remove('hidden');
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            showInstallPromptIfEligible();
+        });
+
+        document.getElementById('btn-trigger-install').addEventListener('click', async () => {
+            if (!deferredInstallPrompt) return;
+            deferredInstallPrompt.prompt();
+            const choice = await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+            installBanner.classList.add('hidden');
+            if (choice && choice.outcome === 'accepted') {
+                showToast('Bio Genesis added to your Home Screen!');
+            }
+        });
+
+        document.getElementById('btn-dismiss-install').addEventListener('click', () => {
+            sessionStorage.setItem(INSTALL_DISMISSED_KEY, 'true');
+            installBanner.classList.add('hidden');
+        });
+
+        // --- SIMULATION CONSTANTS & STATE ---
+        const GRID_SIZE = 160;
+        const MAX_HISTORY = 40;
+        const SAVED_STORAGE_KEY = 'biogenesis_saved_designs_v1';
+        const WELCOME_PREF_KEY = 'biogenesis_show_welcome_v1';
+        const SETTINGS_STORAGE_KEY = 'biogenesis_user_settings_v1';
+
+        function saveUserSettings() {
+            try {
+                const payload = {
+                    quantumMode,
+                    soundEnabled,
+                    darkMode: document.documentElement.classList.contains('dark'),
+                    targetFPS,
+                    currentRule,
+                    wrapEdges
+                };
+                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+            } catch (e) {}
+        }
+
+        function applyUserSettings(settings) {
+            if (!settings || typeof settings !== 'object') return;
+
+            // Theme (Light / Dark)
+            if (typeof settings.darkMode === 'boolean') {
+                const html = document.documentElement;
+                html.classList.toggle('dark', settings.darkMode);
+                const bg = settings.darkMode ? '#090d16' : '#f8fafc';
+                html.style.backgroundColor = bg;
+                document.getElementById('meta-theme-color').setAttribute('content', bg);
+                document.getElementById('icon-sun').classList.toggle('hidden', !settings.darkMode);
+                document.getElementById('icon-moon').classList.toggle('hidden', settings.darkMode);
+            }
+
+            // Quantum Mode
+            if (typeof settings.quantumMode === 'boolean') {
+                quantumMode = settings.quantumMode;
+                const btnQ = document.getElementById('btn-quantum');
+                const qLabel = document.getElementById('quantum-label');
+                const qBolt = document.getElementById('icon-quantum-bolt');
+                if (quantumMode) {
+                    btnQ.className = 'hud-surface bg-indigo-600 border border-indigo-400 text-white shadow-md shadow-indigo-500/35 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition';
+                    qBolt.setAttribute('fill', 'currentColor');
+                    qLabel.textContent = 'Quantum: ON';
+                } else {
+                    btnQ.className = 'hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition';
+                    qBolt.setAttribute('fill', 'none');
+                    qLabel.textContent = 'Classic Mode';
+                }
+            }
+
+            // Generative Audio
+            if (typeof settings.soundEnabled === 'boolean') {
+                soundEnabled = settings.soundEnabled;
+                const btnSound = document.getElementById('btn-sound');
+                const iconOff = document.getElementById('icon-sound-off');
+                const iconOn = document.getElementById('icon-sound-on');
+                if (soundEnabled) {
+                    iconOff.classList.add('hidden');
+                    iconOn.classList.remove('hidden');
+                    btnSound.classList.remove('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
+                    btnSound.classList.add('border-blue-500/40', 'text-blue-500');
+                } else {
+                    iconOn.classList.add('hidden');
+                    iconOff.classList.remove('hidden');
+                    btnSound.classList.remove('border-blue-500/40', 'text-blue-500');
+                    btnSound.classList.add('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
+                }
+            }
+
+            // Simulation Speed (FPS)
+            if (typeof settings.targetFPS === 'number' && settings.targetFPS >= 1 && settings.targetFPS <= 60) {
+                targetFPS = settings.targetFPS;
+                const slider = document.getElementById('speed-slider');
+                const speedVal = document.getElementById('speed-val');
+                if (slider) slider.value = String(targetFPS);
+                if (speedVal) speedVal.textContent = `${targetFPS} FPS`;
+            }
+
+            // Universe Ruleset
+            if (typeof settings.currentRule === 'string') {
+                currentRule = settings.currentRule;
+                parseRuleString(currentRule);
+                const ruleSelect = document.getElementById('rule-select');
+                if (ruleSelect) ruleSelect.value = currentRule;
+            }
+
+            // Toroid Edge Wrapping
+            if (typeof settings.wrapEdges === 'boolean') {
+                wrapEdges = settings.wrapEdges;
+                const wrapToggle = document.getElementById('wrap-toggle');
+                if (wrapToggle) wrapToggle.checked = wrapEdges;
+            }
+        }
+
+        function loadUserSettings() {
+            try {
+                const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+                if (raw) applyUserSettings(JSON.parse(raw));
+            } catch (e) {}
+        }
+
+        let grid = [];
+        let trailGrid = [];
+        let historyStack = [];
         let generation = 0;
         let population = 0;
-        let fps = 15;
-        let lastFrameTime = 0;
+        let isRunning = false;
         let quantumMode = true;
         let wrapEdges = true;
-        let currentRule = { born: [3], survive: [2, 3] };
-
-        // Kamera & Viewport (Zoom & Panorering)
-        let cellSize = 14;
-        let offsetX = 0;
-        let offsetY = 0;
-        let currentTool = 'draw'; // 'draw', 'catalyst', 'erase', 'pan'
-
-        // Ljudsyntes
         let soundEnabled = false;
-        let audioCtx = null;
-        const pentatonicScale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+        let activeTool = 'draw'; // 'draw' | 'erase' | 'catalyst' | 'pan'
+        let currentCategory = 'all';
+        let currentRule = 'B3/S23';
+        let birthRules = new Set([3]);
+        let surviveRules = new Set([2, 3]);
+        let targetFPS = 15;
+        let lastStepTime = 0;
 
-        // DOM-element
+        // Camera & Viewport
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { alpha: false });
-        const genEl = document.getElementById('gen-count');
-        const popEl = document.getElementById('pop-count');
-        const statusText = document.getElementById('status-text');
-        const statusDot = document.getElementById('status-dot');
+        const ctx = canvas.getContext('2d');
+        let cellSize = 18;
+        const MIN_CELL_SIZE = 5;
+        const MAX_CELL_SIZE = 46;
+        const DEFAULT_CELL_SIZE = 18;
+        let cameraX = 0;
+        let cameraY = 0;
 
-        // --- HJÄLPFUNKTIONER ---
-        function createEmptyGrid() {
-            return Array.from({ length: ROWS }, () => new Int16Array(COLS));
-        }
-
-        function cloneGrid(g) {
-            return g.map(row => new Int16Array(row));
-        }
-
-        let isPersistentToastActive = false;
-
-        function hideToast() {
-            const toast = document.getElementById('toast');
-            clearTimeout(toast._timer);
-            isPersistentToastActive = false;
-            toast.classList.add('opacity-0');
-        }
+        // --- TOAST NOTIFICATION SYSTEM ---
+        let toastTimeout = null;
+        let toastIsPersistent = false;
+        const toastEl = document.getElementById('toast');
 
         function showToast(msg, persistent = false) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.remove('opacity-0');
-            clearTimeout(toast._timer);
-            isPersistentToastActive = persistent;
+            if (!toastEl) return;
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+                toastTimeout = null;
+            }
+            toastEl.textContent = msg;
+            toastEl.classList.remove('opacity-0');
+            toastIsPersistent = persistent;
             if (!persistent) {
-                toast._timer = setTimeout(() => {
-                    toast.classList.add('opacity-0');
-                    isPersistentToastActive = false;
+                toastTimeout = setTimeout(() => {
+                    toastEl.classList.add('opacity-0');
                 }, 5000);
             }
         }
 
-        // --- LJUDSYNTES (WEB AUDIO API) ---
-        function playBirthNote(bornCount) {
-            if (!soundEnabled || bornCount === 0) return;
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                const freq = pentatonicScale[bornCount % pentatonicScale.length];
-
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-                gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
-
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.18);
-            } catch (e) {
-                // Ignorera ljudfel om webbläsaren blockerar
+        function dismissPersistentToast() {
+            if (toastIsPersistent && toastEl) {
+                toastIsPersistent = false;
+                toastEl.classList.add('opacity-0');
             }
         }
 
-        // --- SIMULERINGSLOGIK ---
-        function stepSimulation() {
-            // Spara nuvarande tillstånd i historiken
-            if (historyStack.length >= MAX_HISTORY) historyStack.shift();
-            historyStack.push({ grid: cloneGrid(grid), gen: generation });
+        // --- GENERATIVE WEB AUDIO SYNTHESIZER ---
+        let audioCtx = null;
+        const PENTA_FREQS = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
 
-            const nextGrid = createEmptyGrid();
+        function playBirthNote(intensity = 1) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const freq = PENTA_FREQS[Math.floor(Math.random() * PENTA_FREQS.length)];
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(Math.min(0.06, 0.015 * intensity), audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.19);
+            } catch (e) {}
+        }
+
+        // --- GRID HELPERS ---
+        // Cell values: 0 = empty, >0 = alive cell age (1..255), -1 = immortal Quantum Catalyst
+        function createEmptyGrid() {
+            trailGrid = Array.from({ length: GRID_SIZE }, () => new Float32Array(GRID_SIZE));
+            return Array.from({ length: GRID_SIZE }, () => new Int16Array(GRID_SIZE));
+        }
+
+        function cloneGrid(src) {
+            return src.map(row => new Int16Array(row));
+        }
+
+        function pushHistory() {
+            historyStack.push({
+                grid: cloneGrid(grid),
+                generation,
+                population
+            });
+            if (historyStack.length > MAX_HISTORY) historyStack.shift();
+            updateStepBackButton();
+        }
+
+        function updateStepBackButton() {
+            const btn = document.getElementById('btn-step-back');
+            if (btn) btn.disabled = historyStack.length === 0;
+        }
+
+        function parseRuleString(ruleStr) {
+            const match = ruleStr.match(/B([0-8]*)\/S([0-8]*)/i);
+            if (!match) return;
+            birthRules = new Set(match[1].split('').map(Number));
+            surviveRules = new Set(match[2].split('').map(Number));
+        }
+
+        function countPopulation(targetGrid) {
+            let count = 0;
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (targetGrid[r][c] !== 0) count++;
+                }
+            }
+            return count;
+        }
+
+        // --- SIMULATION STEP ENGINE ---
+        function stepSimulation(fromManual = false) {
+            if (!fromManual) pushHistory();
+
+            const nextGrid = Array.from({ length: GRID_SIZE }, () => new Int16Array(GRID_SIZE));
             let newPop = 0;
             let births = 0;
             let changed = false;
 
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    const state = grid[r][c];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const currentVal = grid[r][c];
 
-                    // Minska befintligt kvant-spår
-                    if (trailGrid[r][c] > 0) {
-                        trailGrid[r][c] = Math.max(0, trailGrid[r][c] - 0.14);
-                    }
-
-                    // Katalysator-celler (-1) överlever alltid och räknas som grannar
-                    if (state === -1) {
+                    // Immortal Quantum Catalyst stays alive and radiates energy
+                    if (currentVal === -1) {
                         nextGrid[r][c] = -1;
                         newPop++;
                         continue;
                     }
 
-                    // Räkna levande grannar
+                    // Count 8 neighbors
                     let neighbors = 0;
                     for (let dr = -1; dr <= 1; dr++) {
                         for (let dc = -1; dc <= 1; dc++) {
                             if (dr === 0 && dc === 0) continue;
                             let nr = r + dr;
                             let nc = c + dc;
-
                             if (wrapEdges) {
-                                nr = (nr + ROWS) % ROWS;
-                                nc = (nc + COLS) % COLS;
-                            } else if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) {
+                                nr = (nr + GRID_SIZE) % GRID_SIZE;
+                                nc = (nc + GRID_SIZE) % GRID_SIZE;
+                            } else if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) {
                                 continue;
                             }
-
-                            if (grid[nr][nc] !== 0) {
-                                neighbors++;
-                            }
+                            if (grid[nr][nc] !== 0) neighbors++;
                         }
                     }
 
-                    // Tillämpa regler
-                    if (state > 0) {
-                        // Levande cell
-                        if (currentRule.survive.includes(neighbors)) {
-                            nextGrid[r][c] = Math.min(state + 1, 100); // Åldras
+                    if (currentVal > 0) {
+                        if (surviveRules.has(neighbors)) {
+                            nextGrid[r][c] = Math.min(255, currentVal + 1);
                             newPop++;
                         } else {
-                            // Dör -> Lämna kvant-spår
                             nextGrid[r][c] = 0;
                             changed = true;
-                            if (quantumMode) trailGrid[r][c] = 0.85;
+                            if (quantumMode) trailGrid[r][c] = 1.0;
                         }
                     } else {
-                        // Död cell
-                        if (currentRule.born.includes(neighbors)) {
-                            nextGrid[r][c] = 1; // Föds (ålder 1)
+                        if (birthRules.has(neighbors)) {
+                            nextGrid[r][c] = 1;
                             newPop++;
                             births++;
                             changed = true;
@@ -651,352 +924,399 @@
                 }
             }
 
-            // Om inga celler föddes eller dog har systemet stannat av (utdött eller statiskt)
-            if (!changed) {
-                historyStack.pop(); // Ta bort duplicerat steg från historiken
-                population = newPop;
-                updateHUD();
-                if (isRunning) {
-                    togglePlay(false);
-                    statusText.textContent = newPop === 0 ? 'Extinct' : 'Static';
-                    statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
-                    showToast(newPop === 0 ? 'All life extinguished — stopped' : 'Static equilibrium reached — stopped');
-                } else {
-                    showToast(newPop === 0 ? 'Grid is empty' : 'Pattern is completely static');
+            // Decay quantum trails
+            if (quantumMode) {
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        if (trailGrid[r][c] > 0) {
+                            trailGrid[r][c] = Math.max(0, trailGrid[r][c] - 0.14);
+                        }
+                    }
                 }
-                return;
             }
 
             grid = nextGrid;
             generation++;
             population = newPop;
             updateHUD();
-            if (births > 0 && generation % 2 === 0) playBirthNote(births);
+
+            if (births > 0) playBirthNote(Math.min(4, births / 3));
+
+            // Auto-pause if extinct or completely static equilibrium reached
+            if (isRunning && (population === 0 || !changed)) {
+                setRunningState(false, population === 0 ? 'Extinct' : 'Static');
+                showToast(population === 0 ? 'Universe extinct — simulation paused.' : 'Static equilibrium reached — paused.');
+            }
         }
 
-        function stepBackward() {
-            if (historyStack.length === 0) {
-                showToast("No previous history");
-                return;
-            }
-            if (isRunning) togglePlay(false);
-            const prev = historyStack.pop();
-            grid = prev.grid;
-            generation = prev.gen;
-            recalculatePopulation();
-            updateHUD();
-            render();
-        }
+        // --- HUD & STATE CONTROLS ---
+        function setRunningState(running, customLabel = null) {
+            isRunning = running;
+            const dot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            const iconPlay = document.getElementById('icon-play');
+            const iconPause = document.getElementById('icon-pause');
 
-        function recalculatePopulation() {
-            let count = 0;
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    if (grid[r][c] !== 0) count++;
-                }
+            if (isRunning) {
+                dismissPersistentToast();
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 running-indicator';
+                statusText.textContent = 'Running';
+                iconPlay.classList.add('hidden');
+                iconPause.classList.remove('hidden');
+            } else {
+                dot.className = `w-2.5 h-2.5 rounded-full ${customLabel === 'Extinct' ? 'bg-rose-500' : 'bg-amber-500'}`;
+                statusText.textContent = customLabel || 'Paused';
+                iconPlay.classList.remove('hidden');
+                iconPause.classList.add('hidden');
             }
-            population = count;
         }
 
         function updateHUD() {
-            genEl.textContent = generation;
-            popEl.textContent = population;
-            document.getElementById('btn-step-back').disabled = historyStack.length === 0;
+            document.getElementById('gen-count').textContent = generation;
+            document.getElementById('pop-count').textContent = population;
         }
 
-        // --- RENDERING & CANVAS ---
-        let canvasWidth = 0;
-        let canvasHeight = 0;
-        let hasUserPanned = false;
+        function updateZoomLabel() {
+            const pct = Math.round((cellSize / DEFAULT_CELL_SIZE) * 100);
+            document.getElementById('zoom-percent-label').textContent = `${pct}%`;
+        }
 
+        // --- CANVAS RENDERER ---
         function resizeCanvas() {
-            const rect = canvas.getBoundingClientRect();
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            canvasWidth = rect.width || window.innerWidth;
-            canvasHeight = rect.height || window.innerHeight;
-            canvas.width = Math.floor(canvasWidth * dpr);
-            canvas.height = Math.floor(canvasHeight * dpr);
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = Math.floor(rect.width * dpr);
+            canvas.height = Math.floor(rect.height * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-            if (!hasUserPanned) {
-                centerGrid();
-            }
             render();
         }
 
-        function centerGrid() {
-            const totalW = COLS * cellSize;
-            const totalH = ROWS * cellSize;
-            offsetX = Math.round((canvasWidth - totalW) / 2);
-            offsetY = Math.round((canvasHeight - totalH) / 2);
-            hasUserPanned = false;
+        function centerCamera() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const totalW = GRID_SIZE * cellSize;
+            const totalH = GRID_SIZE * cellSize;
+            cameraX = (rect.width - totalW) / 2;
+            cameraY = (rect.height - totalH) / 2;
+            render();
         }
 
         function render() {
+            if (!grid || grid.length === 0) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
             const isDark = document.documentElement.classList.contains('dark');
 
-            // Bakgrund
             ctx.fillStyle = isDark ? '#090d16' : '#f8fafc';
-            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            ctx.fillRect(0, 0, width, height);
 
-            const startCol = Math.max(0, Math.floor(-offsetX / cellSize));
-            const endCol = Math.min(COLS, Math.ceil((canvasWidth - offsetX) / cellSize));
-            const startRow = Math.max(0, Math.floor(-offsetY / cellSize));
-            const endRow = Math.min(ROWS, Math.ceil((canvasHeight - offsetY) / cellSize));
+            const startCol = Math.max(0, Math.floor(-cameraX / cellSize));
+            const endCol = Math.min(GRID_SIZE - 1, Math.ceil((width - cameraX) / cellSize));
+            const startRow = Math.max(0, Math.floor(-cameraY / cellSize));
+            const endRow = Math.min(GRID_SIZE - 1, Math.ceil((height - cameraY) / cellSize));
 
-            // Rita kvant-spår och celler
-            for (let r = startRow; r < endRow; r++) {
-                const y = offsetY + r * cellSize;
-                for (let c = startCol; c < endCol; c++) {
-                    const x = offsetX + c * cellSize;
-                    const state = grid[r][c];
-                    const trail = trailGrid[r][c];
-
-                    // Kvant-spår (efterglöd)
-                    if (state === 0 && quantumMode && trail > 0.02) {
-                        ctx.fillStyle = isDark
-                            ? `rgba(56, 189, 248, ${trail * 0.22})`
-                            : `rgba(37, 99, 235, ${trail * 0.16})`;
-                        ctx.fillRect(x, y, cellSize, cellSize);
-                    }
-
-                    // Levande cell eller Katalysator
-                    if (state !== 0) {
-                        const pad = cellSize > 8 ? 1 : 0.2;
-                        if (state === -1) {
-                            // Gyllene Kvant-Katalysator
-                            ctx.fillStyle = '#f59e0b';
-                        } else if (!quantumMode) {
-                            // Klassisk blå färg
-                            ctx.fillStyle = isDark ? '#3b82f6' : '#1d4ed8';
-                        } else {
-                            // Åldersbaserad färggradient i Quantum Mode
-                            if (state === 1) ctx.fillStyle = '#38bdf8';       // Nyfödd: Ljus cyan
-                            else if (state < 5) ctx.fillStyle = '#3b82f6';    // Ung: Klarblå
-                            else if (state < 15) ctx.fillStyle = '#6366f1';   // Mogen: Indigo
-                            else ctx.fillStyle = '#a855f7';                   // Äldre: Violett
-                        }
-
-                        if (cellSize >= 10) {
-                            drawRoundedRect(ctx, x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, Math.min(4, cellSize * 0.25));
-                        } else {
-                            ctx.fillRect(x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2);
-                        }
-                    }
-                }
-            }
-
-            // Rita rutnätslinjer om cellerna är tillräckligt stora
-            if (cellSize >= 6) {
-                ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(15, 23, 42, 0.10)';
+            // Grid lines
+            if (cellSize >= 7) {
+                ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.35)' : 'rgba(203, 213, 225, 0.7)';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-
-                for (let c = startCol; c <= endCol; c++) {
-                    const x = Math.round(offsetX + c * cellSize) + 0.5;
-                    ctx.moveTo(x, Math.max(0, offsetY));
-                    ctx.lineTo(x, Math.min(canvasHeight, offsetY + ROWS * cellSize));
+                for (let c = startCol; c <= endCol + 1; c++) {
+                    const x = Math.round(cameraX + c * cellSize) + 0.5;
+                    ctx.moveTo(x, Math.max(0, cameraY));
+                    ctx.lineTo(x, Math.min(height, cameraY + GRID_SIZE * cellSize));
                 }
-                for (let r = startRow; r <= endRow; r++) {
-                    const y = Math.round(offsetY + r * cellSize) + 0.5;
-                    ctx.moveTo(Math.max(0, offsetX), y);
-                    ctx.lineTo(Math.min(canvasWidth, offsetX + COLS * cellSize), y);
+                for (let r = startRow; r <= endRow + 1; r++) {
+                    const y = Math.round(cameraY + r * cellSize) + 0.5;
+                    ctx.moveTo(Math.max(0, cameraX), y);
+                    ctx.lineTo(Math.min(width, cameraX + GRID_SIZE * cellSize), y);
                 }
                 ctx.stroke();
             }
 
-            // Yttre ram runt spelplanen
-            ctx.strokeStyle = isDark ? 'rgba(59, 130, 246, 0.35)' : 'rgba(37, 99, 235, 0.35)';
+            // World border
+            ctx.strokeStyle = isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(37, 99, 235, 0.25)';
             ctx.lineWidth = 1.5;
-            ctx.strokeRect(offsetX, offsetY, COLS * cellSize, ROWS * cellSize);
-        }
+            ctx.strokeRect(cameraX, cameraY, GRID_SIZE * cellSize, GRID_SIZE * cellSize);
 
-        function drawRoundedRect(context, x, y, width, height, radius) {
-            context.beginPath();
-            context.moveTo(x + radius, y);
-            context.lineTo(x + width - radius, y);
-            context.quadraticCurveTo(x + width, y, x + width, y + radius);
-            context.lineTo(x + width, y + height - radius);
-            context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-            context.lineTo(x + radius, y + height);
-            context.quadraticCurveTo(x, y + height, x, y + height - radius);
-            context.lineTo(x, y + radius);
-            context.quadraticCurveTo(x, y, x + radius, y);
-            context.closePath();
-            context.fill();
-        }
+            const pad = cellSize >= 12 ? 1.5 : 0.6;
+            const radius = Math.min(6, Math.max(1.5, cellSize * 0.22));
 
-        // --- HUVUDLOOP ---
-        function gameLoop(timestamp) {
-            if (isRunning) {
-                const interval = 1000 / fps;
-                if (timestamp - lastFrameTime >= interval) {
-                    stepSimulation();
-                    lastFrameTime = timestamp;
+            // Cells & Quantum Trails
+            for (let r = startRow; r <= endRow; r++) {
+                const y = cameraY + r * cellSize;
+                for (let c = startCol; c <= endCol; c++) {
+                    const x = cameraX + c * cellSize;
+                    const val = grid[r][c];
+
+                    // Quantum Ghost Trail
+                    if (quantumMode && val === 0 && trailGrid[r][c] > 0.02) {
+                        const alpha = trailGrid[r][c] * (isDark ? 0.32 : 0.24);
+                        ctx.fillStyle = `rgba(99, 102, 241, ${alpha.toFixed(3)})`;
+                        drawRoundedCell(x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, radius);
+                    }
+
+                    if (val === 0) continue;
+
+                    if (val === -1) {
+                        // Quantum Catalyst Node (Immortal Amber/Gold Core)
+                        ctx.fillStyle = '#f59e0b';
+                        drawRoundedCell(x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, radius);
+                        if (cellSize >= 10) {
+                            ctx.fillStyle = '#fef3c7';
+                            ctx.beginPath();
+                            ctx.arc(x + cellSize / 2, y + cellSize / 2, cellSize * 0.18, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    } else {
+                        // Living Cell (Age gradient in Quantum mode, crisp cyan/blue in Classic mode)
+                        if (!quantumMode) {
+                            ctx.fillStyle = isDark ? '#38bdf8' : '#2563eb';
+                        } else if (val === 1) {
+                            ctx.fillStyle = isDark ? '#38bdf8' : '#0284c7';
+                        } else if (val < 6) {
+                            ctx.fillStyle = isDark ? '#6366f1' : '#4f46e5';
+                        } else {
+                            ctx.fillStyle = isDark ? '#a855f7' : '#7c3aed';
+                        }
+                        drawRoundedCell(x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, radius);
+                    }
                 }
             }
-            render();
-            requestAnimationFrame(gameLoop);
         }
 
-        // --- INTERAKTION: MUS & TOUCH (iPhone, iPad, Desktop) ---
-        let isPointerDown = false;
-        let lastPointerX = 0;
-        let lastPointerY = 0;
-        let initialPinchDist = null;
-        let initialCellSize = cellSize;
+        function drawRoundedCell(x, y, w, h, r) {
+            if (w <= 0 || h <= 0) return;
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y, w, h, r);
+            } else {
+                ctx.rect(x, y, w, h);
+            }
+            ctx.fill();
+        }
 
-        function getGridCoords(clientX, clientY) {
+        // --- INTERACTION: DRAWING, ERASING, PANNING & PINCH ZOOM ---
+        let isPointerDown = false;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let lastPaintedKey = '';
+        let initialPinchDist = null;
+        let initialPinchCellSize = DEFAULT_CELL_SIZE;
+
+        function screenToCell(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
-            const relX = clientX - rect.left;
-            const relY = clientY - rect.top;
-            const col = Math.floor((relX - offsetX) / cellSize);
-            const row = Math.floor((relY - offsetY) / cellSize);
-            return { row, col };
+            const c = Math.floor((clientX - rect.left - cameraX) / cellSize);
+            const r = Math.floor((clientY - rect.top - cameraY) / cellSize);
+            if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) return null;
+            return { r, c };
         }
 
         function applyToolAt(clientX, clientY) {
-            if (isPersistentToastActive) {
-                hideToast();
-            }
-            const { row, col } = getGridCoords(clientX, clientY);
-            if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
+            const cell = screenToCell(clientX, clientY);
+            if (!cell) return;
+            const key = `${cell.r},${cell.c}`;
+            if (key === lastPaintedKey) return;
+            lastPaintedKey = key;
 
-            if (currentTool === 'draw') {
-                if (grid[row][col] === 0) {
-                    grid[row][col] = 1;
-                    population++;
+            dismissPersistentToast();
+            const prev = grid[cell.r][cell.c];
+
+            if (activeTool === 'draw') {
+                if (prev !== 1) {
+                    grid[cell.r][cell.c] = 1;
+                    trailGrid[cell.r][cell.c] = 0;
+                    population = countPopulation(grid);
+                    updateHUD();
+                    playBirthNote(0.7);
+                    render();
                 }
-            } else if (currentTool === 'catalyst') {
-                if (grid[row][col] !== -1) {
-                    if (grid[row][col] === 0) population++;
-                    grid[row][col] = -1;
+            } else if (activeTool === 'erase') {
+                if (prev !== 0) {
+                    grid[cell.r][cell.c] = 0;
+                    trailGrid[cell.r][cell.c] = 0;
+                    population = countPopulation(grid);
+                    updateHUD();
+                    render();
                 }
-            } else if (currentTool === 'erase') {
-                if (grid[row][col] !== 0) {
-                    grid[row][col] = 0;
-                    trailGrid[row][col] = 0;
-                    population--;
+            } else if (activeTool === 'catalyst') {
+                if (prev !== -1) {
+                    grid[cell.r][cell.c] = -1;
+                    trailGrid[cell.r][cell.c] = 0;
+                    population = countPopulation(grid);
+                    updateHUD();
+                    playBirthNote(1.3);
+                    render();
                 }
             }
-            updateHUD();
+        }
+
+        function zoomAt(factor, focalX, focalY) {
+            const rect = canvas.getBoundingClientRect();
+            const cx = focalX !== undefined ? focalX - rect.left : rect.width / 2;
+            const cy = focalY !== undefined ? focalY - rect.top : rect.height / 2;
+
+            const oldSize = cellSize;
+            const newSize = Math.max(MIN_CELL_SIZE, Math.min(MAX_CELL_SIZE, oldSize * factor));
+            if (Math.abs(newSize - oldSize) < 0.01) return;
+
+            const ratio = newSize / oldSize;
+            cameraX = cx - (cx - cameraX) * ratio;
+            cameraY = cy - (cy - cameraY) * ratio;
+            cellSize = newSize;
+            updateZoomLabel();
             render();
         }
 
-        // Mus-händelser (Desktop)
-        canvas.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
-            isPointerDown = true;
-            lastPointerX = e.clientX;
-            lastPointerY = e.clientY;
-            if (currentTool !== 'pan') {
-                applyToolAt(e.clientX, e.clientY);
-            }
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (!isPointerDown) return;
-            const dx = e.clientX - lastPointerX;
-            const dy = e.clientY - lastPointerY;
-            if (currentTool === 'pan') {
-                offsetX += dx;
-                offsetY += dy;
-                hasUserPanned = true;
-                render();
-            } else {
-                applyToolAt(e.clientX, e.clientY);
-            }
-            lastPointerX = e.clientX;
-            lastPointerY = e.clientY;
-        });
-
-        window.addEventListener('mouseup', () => {
-            isPointerDown = false;
-        });
-
-        // Mushjul för zoom (Desktop)
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const factor = e.deltaY < 0 ? 1.12 : 0.89;
-            zoomAt(e.clientX, e.clientY, factor);
-        }, { passive: false });
-
-        // Touch-händelser (iPhone & iPad)
         function getPinchDistance(touches) {
             const dx = touches[0].clientX - touches[1].clientX;
             const dy = touches[0].clientY - touches[1].clientY;
             return Math.hypot(dx, dy);
         }
 
-        canvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                isPointerDown = true;
-                lastPointerX = e.touches[0].clientX;
-                lastPointerY = e.touches[0].clientY;
-                if (currentTool !== 'pan') {
-                    applyToolAt(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            } else if (e.touches.length === 2) {
-                isPointerDown = false;
-                initialPinchDist = getPinchDistance(e.touches);
-                initialCellSize = cellSize;
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 1 || e.button === 2 || activeTool === 'pan') {
+                isPanning = true;
+                panStartX = e.clientX - cameraX;
+                panStartY = e.clientY - cameraY;
+                return;
             }
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (e.touches.length === 1 && isPointerDown) {
-                const dx = e.touches[0].clientX - lastPointerX;
-                const dy = e.touches[0].clientY - lastPointerY;
-                if (currentTool === 'pan') {
-                    offsetX += dx;
-                    offsetY += dy;
-                    hasUserPanned = true;
-                    render();
-                } else {
-                    applyToolAt(e.touches[0].clientX, e.touches[0].clientY);
-                }
-                lastPointerX = e.touches[0].clientX;
-                lastPointerY = e.touches[0].clientY;
-            } else if (e.touches.length === 2 && initialPinchDist) {
-                const dist = getPinchDistance(e.touches);
-                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                const targetSize = Math.max(4, Math.min(48, initialCellSize * (dist / initialPinchDist)));
-                zoomAt(midX, midY, targetSize / cellSize);
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            if (e.touches.length < 2) initialPinchDist = null;
-            if (e.touches.length === 0) isPointerDown = false;
+            isPointerDown = true;
+            lastPaintedKey = '';
+            pushHistory();
+            applyToolAt(e.clientX, e.clientY);
         });
 
-        function zoomAt(clientX, clientY, factor) {
-            const rect = canvas.getBoundingClientRect();
-            const relX = clientX - rect.left;
-            const relY = clientY - rect.top;
-            const prevSize = cellSize;
-            cellSize = Math.max(4, Math.min(48, cellSize * factor));
-            const ratio = cellSize / prevSize;
-            offsetX = relX - (relX - offsetX) * ratio;
-            offsetY = relY - (relY - offsetY) * ratio;
-            hasUserPanned = true;
-            document.getElementById('zoom-percent-label').textContent = `${Math.round((cellSize / 14) * 100)}%`;
-            render();
-        }
+        window.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                cameraX = e.clientX - panStartX;
+                cameraY = e.clientY - panStartY;
+                render();
+                return;
+            }
+            if (isPointerDown) {
+                applyToolAt(e.clientX, e.clientY);
+            }
+        });
 
-        // --- MÖNSTERBIBLIOTEK (30 VERIFIERADE MÖNSTER MED MINI-FÖRHANDSVISNING) ---
+        window.addEventListener('mouseup', () => {
+            isPointerDown = false;
+            isPanning = false;
+            lastPaintedKey = '';
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.12 : 0.89;
+            zoomAt(factor, e.clientX, e.clientY);
+        }, { passive: false });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                isPointerDown = false;
+                isPanning = true;
+                initialPinchDist = getPinchDistance(e.touches);
+                initialPinchCellSize = cellSize;
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                panStartX = midX - cameraX;
+                panStartY = midY - cameraY;
+                return;
+            }
+            if (e.touches.length === 1) {
+                const t = e.touches[0];
+                if (activeTool === 'pan') {
+                    isPanning = true;
+                    panStartX = t.clientX - cameraX;
+                    panStartY = t.clientY - cameraY;
+                } else {
+                    isPointerDown = true;
+                    lastPaintedKey = '';
+                    pushHistory();
+                    applyToolAt(t.clientX, t.clientY);
+                }
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && initialPinchDist) {
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const newDist = getPinchDistance(e.touches);
+                const targetSize = Math.max(MIN_CELL_SIZE, Math.min(MAX_CELL_SIZE, initialPinchCellSize * (newDist / initialPinchDist)));
+                const factor = targetSize / cellSize;
+                cameraX = midX - panStartX;
+                cameraY = midY - panStartY;
+                zoomAt(factor, midX, midY);
+                panStartX = midX - cameraX;
+                panStartY = midY - cameraY;
+                return;
+            }
+            if (e.touches.length === 1) {
+                const t = e.touches[0];
+                if (isPanning) {
+                    cameraX = t.clientX - panStartX;
+                    cameraY = t.clientY - panStartY;
+                    render();
+                } else if (isPointerDown) {
+                    applyToolAt(t.clientX, t.clientY);
+                }
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', () => {
+            isPointerDown = false;
+            isPanning = false;
+            initialPinchDist = null;
+            lastPaintedKey = '';
+        });
+
+        // --- VERIFIED 30-PATTERN CATALOG ---
         const PATTERN_CATALOG = [
-            // --- SHIPS (7 verified periodic spaceships) ---
+            // SHIPS (7)
             {
-                id: 'copperhead_c10',
-                name: 'Copperhead (c/10 Spaceship)',
-                icon: '🐍',
-                category: 'ships',
-                accent: 'purple',
-                desc: 'Famous period-10 orthogonal c/10 spaceship discovered by zdr in 2016.',
-                offset: [-6, -4],
+                id: 'glider',
+                name: 'Classic Glider',
+                cat: 'ships',
+                desc: 'Smallest diagonal spaceship (c/4, period 4).',
+                cells: [[0,1],[1,2],[2,0],[2,1],[2,2]]
+            },
+            {
+                id: 'lwss',
+                name: 'Lightweight Spaceship (LWSS)',
+                cat: 'ships',
+                desc: 'Fast orthogonal c/2 cruiser (period 4).',
+                cells: [[0,1],[0,4],[1,0],[2,0],[2,4],[3,0],[3,1],[3,2],[3,3]]
+            },
+            {
+                id: 'mwss',
+                name: 'Middleweight Spaceship (MWSS)',
+                cat: 'ships',
+                desc: '11-cell orthogonal c/2 vessel (period 4).',
+                cells: [[0,2],[1,0],[1,4],[2,5],[3,0],[3,5],[4,1],[4,2],[4,3],[4,4],[4,5]]
+            },
+            {
+                id: 'hwss',
+                name: 'Heavyweight Spaceship (HWSS)',
+                cat: 'ships',
+                desc: 'Largest standard orthogonal c/2 spaceship (period 4).',
+                cells: [[0,2],[0,3],[1,0],[1,5],[2,6],[3,0],[3,6],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6]]
+            },
+            {
+                id: 'twin_hwss',
+                name: 'Twin-HWSS Battle Squadron',
+                cat: 'ships',
+                desc: 'Dual Heavyweight cruisers flying in lockstep c/2 formation.',
+                cells: [
+                    [0,2],[0,3],[1,0],[1,5],[2,6],[3,0],[3,6],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],
+                    [8,2],[8,3],[9,0],[9,5],[10,6],[11,0],[11,6],[12,1],[12,2],[12,3],[12,4],[12,5],[12,6]
+                ]
+            },
+            {
+                id: 'copperhead',
+                name: 'Copperhead (c/10)',
+                cat: 'ships',
+                desc: 'Symmetric period-10 c/10 spaceship discovered in 2016.',
                 cells: [
                     [0,1],[0,2],[0,5],[0,6],
                     [1,3],[1,4],
@@ -1011,13 +1331,10 @@
                 ]
             },
             {
-                id: 'loafer_c7',
-                name: 'Loafer (c/7 Spaceship)',
-                icon: '🛸',
-                category: 'ships',
-                accent: 'cyan',
-                desc: 'Sleek period-7 c/7 orthogonal spaceship discovered by Josh Ball in 2013.',
-                offset: [-4, -4],
+                id: 'loafer',
+                name: 'Loafer (c/7)',
+                cat: 'ships',
+                desc: 'Fast c/7 orthogonal spaceship with trailing spark.',
                 cells: [
                     [0,1],[0,2],[0,5],[0,7],[0,8],
                     [1,0],[1,3],[1,6],[1,7],
@@ -1030,283 +1347,179 @@
                     [8,7],[8,8]
                 ]
             },
-            {
-                id: 'twin_hwss_dreadnought',
-                name: 'Twin-HWSS Battle Squadron',
-                icon: '🛸',
-                category: 'ships',
-                accent: 'cyan',
-                desc: 'Synchronized formation of two 13-cell Heavyweight Spaceships cruising intact at c/2.',
-                offset: [-7, -3],
-                cells: [
-                    [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
-                    [1,0],[1,6],
-                    [2,6],
-                    [3,0],[3,5],
-                    [4,2],[4,3],
-                    [10,1],[10,2],[10,3],[10,4],[10,5],[10,6],
-                    [11,0],[11,6],
-                    [12,6],
-                    [13,0],[13,5],
-                    [14,2],[14,3]
-                ]
-            },
-            {
-                id: 'hwss_heavy',
-                name: 'Heavyweight Spaceship (HWSS)',
-                icon: '🚀',
-                category: 'ships',
-                accent: 'cyan',
-                desc: 'Largest classic elementary c/2 spaceship (13 cells)—keeps its exact cycle forever.',
-                offset: [-2, -3],
-                cells: [
-                    [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
-                    [1,0],[1,6],
-                    [2,6],
-                    [3,0],[3,5],
-                    [4,2],[4,3]
-                ]
-            },
-            {
-                id: 'mwss_cruiser',
-                name: 'Middleweight Spaceship (MWSS)',
-                icon: '🚀',
-                category: 'ships',
-                accent: 'blue',
-                desc: 'Classic 11-cell period-4 orthogonal cruiser moving smoothly across the grid.',
-                offset: [-2, -3],
-                cells: [
-                    [0,1],[0,2],[0,3],[0,4],[0,5],
-                    [1,0],[1,5],
-                    [2,5],
-                    [3,0],[3,4],
-                    [4,2]
-                ]
-            },
-            {
-                id: 'spaceship_fleet',
-                name: 'LWSS & HWSS Armada',
-                icon: '👾',
-                category: 'ships',
-                accent: 'cyan',
-                desc: 'Verified formation of two LWSS scouts flanking a Heavyweight Cruiser cruising in sync at c/2.',
-                offset: [-8, -3],
-                cells: [
-                    [0,1],[0,2],[0,3],[0,4],
-                    [1,0],[1,4],
-                    [2,4],
-                    [3,0],[3,3],
-                    [7,1],[7,2],[7,3],[7,4],[7,5],[7,6],
-                    [8,0],[8,6],
-                    [9,6],
-                    [10,0],[10,5],
-                    [11,2],[11,3],
-                    [15,1],[15,2],[15,3],[15,4],
-                    [16,0],[16,4],
-                    [17,4],
-                    [18,0],[18,3]
-                ]
-            },
-            {
-                id: 'glider_squadron',
-                name: 'Glider Strike Wing',
-                icon: '✈️',
-                category: 'ships',
-                accent: 'blue',
-                desc: 'Five diagonal period-4 gliders flying in tight V-formation across the universe.',
-                offset: [-6, -6],
-                cells: [
-                    [0,1],[1,2],[2,0],[2,1],[2,2],
-                    [4,5],[5,6],[6,4],[6,5],[6,6],
-                    [8,9],[9,10],[10,8],[10,9],[10,10],
-                    [8,1],[9,2],[10,0],[10,1],[10,2],
-                    [0,9],[1,10],[2,8],[2,9],[2,10]
-                ]
-            },
 
-            // --- GUNS (4 verified glider guns) ---
+            // GUNS (4)
             {
                 id: 'gosper_gun',
                 name: 'Gosper Glider Gun',
-                icon: '🔫',
-                category: 'guns',
-                accent: 'blue',
-                desc: 'The iconic period-30 perpetual glider factory that proved life can grow infinitely.',
-                offset: [-5, -18],
+                cat: 'guns',
+                desc: 'First known finite pattern with infinite growth (period 30).',
                 cells: [
-                    [0,24],
-                    [1,22],[1,24],
-                    [2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
-                    [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],
-                    [4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
-                    [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],
-                    [6,10],[6,16],[6,24],
-                    [7,11],[7,15],
-                    [8,12],[8,13]
+                    [4,0],[4,1],[5,0],[5,1],
+                    [4,10],[5,10],[6,10],[3,11],[7,11],[2,12],[8,12],[2,13],[8,13],[5,14],[3,15],[7,15],[4,16],[5,16],[6,16],[5,17],
+                    [2,20],[3,20],[4,20],[2,21],[3,21],[4,21],[1,22],[5,22],[0,24],[1,24],[5,24],[6,24],
+                    [2,34],[3,34],[2,35],[3,35]
                 ]
             },
             {
                 id: 'simkin_gun',
                 name: 'Simkin Glider Gun',
-                icon: '🛰️',
-                category: 'guns',
-                accent: 'cyan',
-                desc: 'Compact period-120 glider factory firing diagonal streams across the universe.',
-                offset: [-10, -16],
+                cat: 'guns',
+                desc: 'Compact period-120 glider cannon discovered in 2015.',
                 cells: [
-                    [0,0],[0,1],[0,7],[0,8],
-                    [1,0],[1,1],[1,7],[1,8],
-                    [3,4],[3,5],
-                    [4,4],[4,5],
-                    [9,22],[9,23],[9,25],[9,26],
-                    [10,21],[10,27],
-                    [11,21],[11,28],[11,31],[11,32],
-                    [12,21],[12,22],[12,23],[12,27],[12,31],[12,32],
-                    [13,26],
-                    [17,20],[17,21],
-                    [18,20],
-                    [19,21],[19,22],[19,23],
-                    [20,23]
+                    [0,0],[0,1],[1,0],[1,1],
+                    [0,7],[0,8],[1,7],[1,8],
+                    [3,4],[3,5],[4,4],[4,5],
+                    [9,22],[9,23],[9,25],[9,26],[10,21],[10,27],[11,21],[11,28],[11,31],[11,32],[12,21],[12,22],[12,23],[12,27],[12,31],[12,32],[13,26],
+                    [17,20],[17,21],[18,20],[19,21],[19,22],[19,23],[20,23]
                 ]
             },
             {
-                id: 'gosper_twin_battery',
+                id: 'twin_gosper',
                 name: 'Twin-Gosper Salvo Battery',
-                icon: '💥',
-                category: 'guns',
-                accent: 'blue',
-                desc: 'Dual parallel Gosper Glider Guns firing synchronized twin glider streams.',
-                offset: [-14, -18],
+                cat: 'guns',
+                desc: 'Synchronized dual glider guns firing parallel streams.',
                 cells: [
-                    [0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
-                    [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
-                    [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
-                    [7,11],[7,15],[8,12],[8,13],
-                    [18,24],[19,22],[19,24],[20,12],[20,13],[20,20],[20,21],[20,34],[20,35],
-                    [21,11],[21,15],[21,20],[21,21],[21,34],[21,35],[22,0],[22,1],[22,10],[22,16],[22,20],[22,21],
-                    [23,0],[23,1],[23,10],[23,14],[23,16],[23,17],[23,22],[23,24],[24,10],[24,16],[24,24],
-                    [25,11],[25,15],[26,12],[26,13]
+                    [4,0],[4,1],[5,0],[5,1],
+                    [4,10],[5,10],[6,10],[3,11],[7,11],[2,12],[8,12],[2,13],[8,13],[5,14],[3,15],[7,15],[4,16],[5,16],[6,16],[5,17],
+                    [2,20],[3,20],[4,20],[2,21],[3,21],[4,21],[1,22],[5,22],[0,24],[1,24],[5,24],[6,24],
+                    [2,34],[3,34],[2,35],[3,35],
+                    [18,0],[18,1],[19,0],[19,1],
+                    [18,10],[19,10],[20,10],[17,11],[21,11],[16,12],[22,12],[16,13],[22,13],[19,14],[17,15],[21,15],[18,16],[19,16],[20,16],[19,17],
+                    [16,20],[17,20],[18,20],[16,21],[17,21],[18,21],[15,22],[19,22],[14,24],[15,24],[19,24],[20,24],
+                    [16,34],[17,34],[16,35],[17,35]
                 ]
             },
             {
-                id: 'bi_gun_p46',
-                name: 'Bi-Gun (Period-46 Twin-Block)',
-                icon: '⚡',
-                category: 'guns',
-                accent: 'indigo',
-                desc: 'Classic period-46 twin-shuttle gun built from two colliding Queen Bee shuttles.',
-                offset: [-11, -11],
+                id: 'bi_gun',
+                name: 'Period-46 Twin-Block Gun',
+                cat: 'guns',
+                desc: 'Classic shuttle-based glider generator.',
                 cells: [
-                    [0,9],[1,7],[1,9],[2,6],[2,8],[3,5],[3,8],[4,6],[4,8],[5,7],[5,9],[6,9],
-                    [3,0],[3,1],[4,0],[4,1],
-                    [3,20],[3,21],[4,20],[4,21],
-                    [15,9],[16,7],[16,9],[17,6],[17,8],[18,5],[18,8],[19,6],[19,8],[20,7],[20,9],[21,9],
-                    [18,0],[18,1],[19,0],[19,1],
-                    [18,20],[18,21],[19,20],[19,21]
+                    [2,0],[2,1],[3,0],[3,1],
+                    [2,8],[3,8],[4,8],[1,9],[5,9],[0,10],[0,11],[6,10],[6,11],[3,12],[1,13],[5,13],[2,14],[3,14],[4,14],[3,15],
+                    [0,18],[1,18],[2,18],[0,19],[1,19],[2,19],[3,20],[3,22],[4,22],
+                    [2,32],[3,32],[2,33],[3,33]
                 ]
             },
 
-            // --- QUANTUM (4 catalyst-powered formations) ---
+            // QUANTUM (4)
             {
-                id: 'quantum_bloom',
+                id: 'quantum_core',
                 name: 'Quantum Catalyst Core',
-                icon: '⚛️',
-                category: 'quantum',
-                accent: 'purple',
-                desc: 'Immortal golden energy catalysts feeding a perpetual kaleidoscopic reaction.',
-                cells: [
-                    [-2,0],[-1,-1],[-1,1],[0,-2],[0,2],[1,-1],[1,1],[2,0],
-                    [-4,0],[4,0],[0,-4],[0,4]
-                ],
-                catalysts: [
-                    [-1,0],[1,0],[0,-1],[0,1]
-                ]
+                cat: 'quantum',
+                desc: 'Immortal golden catalysts sustaining a perpetual oscillator.',
+                cells: [[2,1],[2,2],[2,3]],
+                catalysts: [[0,2],[4,2]]
             },
             {
                 id: 'quantum_collider',
                 name: 'Quantum Glider Collider',
-                icon: '💫',
-                category: 'quantum',
-                accent: 'purple',
-                desc: 'Twin gliders firing directly into a golden catalyst shield to spark new life.',
+                cat: 'quantum',
+                desc: 'Opposing gliders colliding around twin energy nodes.',
                 cells: [
-                    [-6,-5],[-5,-4],[-4,-6],[-4,-5],[-4,-4],
-                    [-6,5],[-5,4],[-4,4],[-4,5],[-4,6]
+                    [0,1],[1,2],[2,0],[2,1],[2,2],
+                    [10,11],[11,10],[12,10],[12,11],[12,12]
                 ],
-                catalysts: [
-                    [2,-1],[2,1],[3,0]
-                ]
+                catalysts: [[6,6],[6,7]]
             },
             {
-                id: 'quantum_reactor_ring',
+                id: 'quantum_tokamak',
                 name: 'Quantum Tokamak Ring',
-                icon: '🔮',
-                category: 'quantum',
-                accent: 'purple',
-                desc: 'Eight golden catalyst nodes containing a high-energy plasma oscillation ring.',
+                cat: 'quantum',
+                desc: 'Four immortal catalysts confining a pulsating plasma core.',
                 cells: [
-                    [-2,-1],[-2,0],[-2,1],[-1,-2],[-1,2],[0,-2],[0,2],[1,-2],[1,2],[2,-1],[2,0],[2,1]
+                    [4,5],[4,6],[4,7],[5,4],[5,8],[6,4],[6,8],[7,4],[7,8],[8,5],[8,6],[8,7]
                 ],
-                catalysts: [
-                    [-4,-2],[-4,2],[4,-2],[4,2],[-2,-4],[2,-4],[-2,4],[2,4]
-                ]
+                catalysts: [[2,6],[10,6],[6,2],[6,10]]
             },
             {
-                id: 'quantum_lighthouse',
+                id: 'quantum_beacon',
                 name: 'Quantum Beacon Array',
-                icon: '🌟',
-                category: 'quantum',
-                accent: 'purple',
-                desc: 'Symmetric four-wing catalyst array radiating continuous waves of newborn cells.',
+                cat: 'quantum',
+                desc: 'Phase-locked quantum beacons generating continuous trails.',
                 cells: [
-                    [-1,-1],[-1,1],[1,-1],[1,1],
-                    [-3,0],[3,0],[0,-3],[0,3]
+                    [1,1],[1,2],[2,1],[3,4],[4,3],[4,4],
+                    [1,9],[1,10],[2,9],[3,12],[4,11],[4,12]
                 ],
-                catalysts: [
-                    [0,0],[-2,-2],[-2,2],[2,-2],[2,2]
-                ]
+                catalysts: [[0,6],[5,6]]
             },
 
-            // --- OSCILLATORS (8 classic periodic oscillators) ---
+            // OSCILLATORS (8)
             {
-                id: 'queen_bee_shuttle',
-                name: 'Queen Bee Shuttle (P30)',
-                icon: '🐝',
-                category: 'oscillators',
-                accent: 'indigo',
-                desc: 'Bill Gosper’s famous period-30 shuttle bouncing between two stabilizer blocks.',
-                offset: [-3, -11],
+                id: 'pulsar',
+                name: 'Cosmic Pulsar (P3)',
+                cat: 'oscillators',
+                desc: 'Iconic 3-period symmetric star oscillator.',
                 cells: [
-                    [0,9],[1,7],[1,9],[2,6],[2,8],[3,5],[3,8],[4,6],[4,8],[5,7],[5,9],[6,9],
+                    [0,2],[0,3],[0,4],[0,8],[0,9],[0,10],
+                    [2,0],[2,5],[2,7],[2,12],
+                    [3,0],[3,5],[3,7],[3,12],
+                    [4,0],[4,5],[4,7],[4,12],
+                    [5,2],[5,3],[5,4],[5,8],[5,9],[5,10],
+                    [7,2],[7,3],[7,4],[7,8],[7,9],[7,10],
+                    [8,0],[8,5],[8,7],[8,12],
+                    [9,0],[9,5],[9,7],[9,12],
+                    [10,0],[10,5],[10,7],[10,12],
+                    [12,2],[12,3],[12,4],[12,8],[12,9],[12,10]
+                ]
+            },
+            {
+                id: 'koks_galaxy',
+                name: "Kok's Spiral Galaxy (P8)",
+                cat: 'oscillators',
+                desc: 'Rotating 8-period galactic spiral arm oscillator.',
+                cells: [
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,7],[0,8],
+                    [1,0],[1,1],[1,2],[1,3],[1,4],[1,5],[1,7],[1,8],
+                    [2,7],[2,8],
+                    [3,0],[3,1],[3,7],[3,8],
+                    [4,0],[4,1],[4,7],[4,8],
+                    [5,0],[5,1],[5,7],[5,8],
+                    [6,0],[6,1],
+                    [7,0],[7,1],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],
+                    [8,0],[8,1],[8,3],[8,4],[8,5],[8,6],[8,7],[8,8]
+                ]
+            },
+            {
+                id: 'pentadecathlon',
+                name: 'Pentadecathlon (P15)',
+                cat: 'oscillators',
+                desc: 'Classic 15-generation rhythmic pulse column.',
+                cells: [
+                    [1,0],[1,1],[0,2],[2,2],[1,3],[1,4],[1,5],[1,6],[0,7],[2,7],[1,8],[1,9]
+                ]
+            },
+            {
+                id: 'queen_bee',
+                name: 'Queen Bee Shuttle (P30)',
+                cat: 'oscillators',
+                desc: 'Bouncing shuttle between two stabilizing end blocks.',
+                cells: [
                     [3,0],[3,1],[4,0],[4,1],
+                    [3,9],[2,10],[4,10],[1,11],[5,11],[2,12],[3,12],[4,12],[0,13],[1,13],[5,13],[6,13],
                     [3,20],[3,21],[4,20],[4,21]
                 ]
             },
             {
-                id: 'tumbler_p14',
-                name: 'The Tumbler (Period-14)',
-                icon: '🤸',
-                category: 'oscillators',
-                accent: 'indigo',
-                desc: 'Classic period-14 acrobatic oscillator discovered by George Collins in 1970.',
-                offset: [-3, -4],
+                id: 'tumbler',
+                name: 'The Tumbler (P14)',
+                cat: 'oscillators',
+                desc: 'Acrobatic 14-period somersaulting oscillator.',
                 cells: [
-                    [0,1],[0,2],[0,6],[0,7],
-                    [1,1],[1,2],[1,6],[1,7],
-                    [2,2],[2,6],
-                    [3,0],[3,2],[3,6],[3,8],
-                    [4,0],[4,2],[4,6],[4,8],
-                    [5,0],[5,1],[5,7],[5,8]
+                    [0,1],[0,2],[0,4],[0,5],
+                    [1,1],[1,2],[1,4],[1,5],
+                    [2,2],[2,4],
+                    [3,0],[3,2],[3,4],[3,6],
+                    [4,0],[4,2],[4,4],[4,6],
+                    [5,0],[5,1],[5,5],[5,6]
                 ]
             },
             {
                 id: 'octagon_2',
-                name: 'Octagon 2 (Period-5)',
-                icon: '🛑',
-                category: 'oscillators',
-                accent: 'indigo',
-                desc: 'Elegant hollow octagonal ring pulsing with a crisp period of 5 generations.',
-                offset: [-4, -4],
+                name: 'Octagon 2 (P5)',
+                cat: 'oscillators',
+                desc: 'Breathing octagonal ring with period 5.',
                 cells: [
                     [0,3],[0,4],
                     [1,2],[1,5],
@@ -1319,228 +1532,137 @@
                 ]
             },
             {
-                id: 'pulsar',
-                name: 'Cosmic Pulsar (Period-3)',
-                icon: '💫',
-                category: 'oscillators',
-                accent: 'indigo',
-                desc: 'Iconic symmetric star-shaped oscillator with a rhythmic period of 3.',
-                cells: [
-                    [-6,-4],[-6,-3],[-6,-2],[-6,2],[-6,3],[-6,4],
-                    [-4,-6],[-3,-6],[-2,-6],[-4,-1],[-3,-1],[-2,-1],[-4,1],[-3,1],[-2,1],[-4,6],[-3,6],[-2,6],
-                    [-1,-4],[-1,-3],[-1,-2],[-1,2],[-1,3],[-1,4],
-                    [1,-4],[1,-3],[1,-2],[1,2],[1,3],[1,4],
-                    [2,-6],[3,-6],[4,-6],[2,-1],[3,-1],[4,-1],[2,1],[3,1],[4,1],[2,6],[3,6],[4,6],
-                    [6,-4],[6,-3],[6,-2],[6,2],[6,3],[6,4]
-                ]
-            },
-            {
-                id: 'koks_galaxy',
-                name: "Kok's Spiral Galaxy (P8)",
-                icon: '🌌',
-                category: 'oscillators',
-                accent: 'indigo',
-                desc: 'Rotating 8-period spiral galaxy that swirls smoothly in place.',
-                cells: [
-                    [-4,-4],[-4,-3],[-4,-2],[-4,-1],[-4,0],[-4,1],
-                    [-3,-4],[-3,-3],[-3,-2],[-3,-1],[-3,0],[-3,1],
-                    [-4,3],[-4,4],[-3,3],[-3,4],[-2,3],[-2,4],[-1,3],[-1,4],[0,3],[0,4],[1,3],[1,4],
-                    [3,-1],[3,0],[3,1],[3,2],[3,3],[3,4],[4,-1],[4,0],[4,1],[4,2],[4,3],[4,4],
-                    [-1,-4],[-1,-3],[0,-4],[0,-3],[1,-4],[1,-3],[2,-4],[2,-3],[3,-4],[3,-3],[4,-4],[4,-3]
-                ]
-            },
-            {
-                id: 'pentadecathlon',
-                name: 'Pentadecathlon (P15)',
-                icon: '⚡',
-                category: 'oscillators',
-                accent: 'indigo',
-                desc: 'Period-15 oscillator that beats like a steady cosmic heart.',
-                cells: [
-                    [-4,0],[-3,0],[-2,-1],[-2,1],[-1,0],[0,0],[1,0],[2,0],[3,-1],[3,1],[4,0],[5,0]
-                ]
-            },
-            {
                 id: 'figure_eight',
                 name: 'Figure-Eight Infinity (P8)',
-                icon: '♾️',
-                category: 'oscillators',
-                accent: 'indigo',
-                desc: 'Period-8 twin-block oscillator weaving a continuous infinity loop.',
+                cat: 'oscillators',
+                desc: 'Two diagonal blocks orbiting in an infinity loop.',
                 cells: [
-                    [-3,-3],[-3,-2],[-3,-1],[-2,-3],[-2,-2],[-2,-1],[-1,-3],[-1,-2],[-1,-1],
-                    [0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]
+                    [0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2],
+                    [3,3],[3,4],[3,5],[4,3],[4,4],[4,5],[5,3],[5,4],[5,5]
                 ]
             },
             {
-                id: 'sacred_mandala',
+                id: 'mandala',
                 name: 'Sacred Symmetry Mandala',
-                icon: '🪷',
-                category: 'oscillators',
-                accent: 'purple',
-                desc: 'Four-fold symmetric crystal that blooms into intricate geometric lace.',
+                cat: 'oscillators',
+                desc: 'Four-fold symmetric harmonic crystal.',
                 cells: [
-                    [-2,-2],[-2,-1],[-2,0],[-2,1],[-2,2],
-                    [-1,-2],[-1,2],[0,-2],[0,2],[1,-2],[1,2],
-                    [2,-2],[2,-1],[2,0],[2,1],[2,2],
-                    [-4,0],[4,0],[0,-4],[0,4]
+                    [0,4],[0,5],[0,6],
+                    [2,2],[2,8],
+                    [4,0],[4,4],[4,6],[4,10],
+                    [5,0],[5,10],
+                    [6,0],[6,4],[6,6],[6,10],
+                    [8,2],[8,8],
+                    [10,4],[10,5],[10,6]
                 ]
             },
 
-            // --- CHAOS & METHUSELAHS (7 famous growth/evolution seeds) ---
+            // CHAOS & METHUSELAHS (7)
             {
-                id: 'switch_engine_puffer',
-                name: 'Switch Engine (Infinite Growth)',
-                icon: '🚂',
-                category: 'chaos',
-                accent: 'emerald',
-                desc: 'Charles Corderman’s legendary 8-cell engine that travels diagonally leaving smoke forever.',
-                offset: [-2, -3],
-                cells: [
-                    [0,1],[0,3],
-                    [1,0],
-                    [2,1],[2,4],
-                    [3,3],[3,4],[3,5]
-                ]
+                id: 'r_pentomino',
+                name: 'R-Pentomino',
+                cat: 'chaos',
+                desc: '5 cells that erupt for 1,103 generations before stabilizing.',
+                cells: [[0,1],[0,2],[1,0],[1,1],[2,1]]
             },
             {
-                id: 'diehard_methuselah',
+                id: 'acorn',
+                name: 'Acorn Methuselah',
+                cat: 'chaos',
+                desc: '7 cells that grow into 633 cells over 5,206 generations.',
+                cells: [[0,1],[1,3],[2,0],[2,1],[2,4],[2,5],[2,6]]
+            },
+            {
+                id: 'diehard',
                 name: 'Diehard (130-Gen Vanisher)',
-                icon: '⏳',
-                category: 'chaos',
-                accent: 'emerald',
-                desc: '7 cells that evolve dramatically before vanishing completely at generation 130.',
-                offset: [-1, -4],
+                cat: 'chaos',
+                desc: '7 cells that vanish completely after exactly 130 steps.',
+                cells: [[0,6],[1,0],[1,1],[2,1],[2,5],[2,6],[2,7]]
+            },
+            {
+                id: 'switch_engine',
+                name: 'Switch Engine (Infinite Growth)',
+                cat: 'chaos',
+                desc: '10-cell seed that expands endlessly across the grid.',
                 cells: [
-                    [0,6],
-                    [1,0],[1,1],
-                    [2,1],[2,5],[2,6],[2,7]
+                    [0,1],[0,3],[1,0],[2,1],[2,4],[3,3],[3,4],[3,5]
                 ]
             },
             {
                 id: 'pi_heptomino',
-                name: 'Pi-Heptomino (173-Gen Blast)',
-                icon: '🥧',
-                category: 'chaos',
-                accent: 'emerald',
-                desc: 'Classic 7-cell U-shape that erupts into gliders, traffic lights, and ponds.',
-                offset: [-1, -1],
-                cells: [
-                    [0,0],[0,1],[0,2],
-                    [1,0],[1,2],
-                    [2,0],[2,2]
-                ]
-            },
-            {
-                id: 'r_pentomino',
-                name: 'R-Pentomino (1,103 Gens)',
-                icon: '🔥',
-                category: 'chaos',
-                accent: 'emerald',
-                desc: 'Just 5 cells that erupt into 1,103 generations of unpredictable life.',
-                cells: [
-                    [-1,0],[-1,1],[0,-1],[0,0],[1,0]
-                ]
-            },
-            {
-                id: 'acorn',
-                name: 'Acorn Methuselah (5,206 Gens)',
-                icon: '🌱',
-                category: 'chaos',
-                accent: 'emerald',
-                desc: '7 tiny cells that grow into a sprawling ecosystem over 5,206 steps.',
-                cells: [
-                    [-1,-2],[0,0],[1,-3],[1,-2],[1,1],[1,2],[1,3]
-                ]
+                name: 'Pi-Heptomino',
+                cat: 'chaos',
+                desc: '7-cell symmetric seed creating rich glider cascades.',
+                cells: [[0,0],[0,1],[0,2],[1,0],[1,2],[2,0],[2,2]]
             },
             {
                 id: 'b_heptomino',
-                name: 'B-Heptomino Engine',
-                icon: '🌪️',
-                category: 'chaos',
-                accent: 'emerald',
-                desc: 'High-energy 7-cell seed that launches gliders while evolving.',
-                cells: [
-                    [-1,-1],[-1,1],[-1,2],[0,-1],[0,0],[0,1],[1,0]
-                ]
+                name: 'B-Heptomino',
+                cat: 'chaos',
+                desc: 'Asymmetric 7-cell seed generating chaotic ripples.',
+                cells: [[0,1],[0,2],[1,0],[1,1],[1,2],[2,1],[2,3]]
             },
             {
-                id: 'random',
+                id: 'primordial_soup',
                 name: 'Primordial Quantum Soup',
-                icon: '🎲',
-                category: 'chaos',
-                accent: 'emerald',
-                desc: 'Fills the grid with randomized life and rare golden catalysts.',
-                isRandom: true,
+                cat: 'chaos',
+                desc: 'Dense symmetric cluster spawning gliders and oscillators.',
                 cells: [
-                    [-2,-2],[-2,0],[-2,2],[-1,-1],[-1,1],[0,-2],[0,2],[1,-1],[1,1],[2,-2],[2,0],[2,2]
-                ],
-                catalysts: [[0,0]]
+                    [0,2],[0,3],[1,0],[1,4],[2,1],[2,2],[2,5],[3,0],[3,3],[3,4],
+                    [4,1],[4,2],[5,2],[5,3],[5,4]
+                ]
             }
         ];
 
-        function renderPatternThumbnail(pattern) {
-            const c = document.createElement('canvas');
-            c.width = 96;
-            c.height = 96;
-            const tCtx = c.getContext('2d');
-
-            tCtx.fillStyle = '#070b14';
-            tCtx.fillRect(0, 0, 96, 96);
-
-            // Subtle mini-grid
-            tCtx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
-            tCtx.lineWidth = 1;
-            for (let i = 12; i < 96; i += 12) {
-                tCtx.beginPath(); tCtx.moveTo(i, 0); tCtx.lineTo(i, 96); tCtx.stroke();
-                tCtx.beginPath(); tCtx.moveTo(0, i); tCtx.lineTo(96, i); tCtx.stroke();
+        // --- PATTERN LOADING, SAVING & URL SHARING ---
+        function loadPattern(pattern) {
+            pushHistory();
+            grid = createEmptyGrid();
+            let maxR = 0, maxC = 0;
+            pattern.cells.forEach(([r, c]) => {
+                if (r > maxR) maxR = r;
+                if (c > maxC) maxC = c;
+            });
+            if (pattern.catalysts) {
+                pattern.catalysts.forEach(([r, c]) => {
+                    if (r > maxR) maxR = r;
+                    if (c > maxC) maxC = c;
+                });
             }
 
-            const allPts = [...(pattern.cells || []), ...(pattern.catalysts || [])];
-            if (allPts.length === 0) return c;
+            const offsetR = Math.floor((GRID_SIZE - maxR) / 2);
+            const offsetC = Math.floor((GRID_SIZE - maxC) / 2);
 
-            let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
-            allPts.forEach(([r, col]) => {
-                if (r < minR) minR = r;
-                if (r > maxR) maxR = r;
-                if (col < minC) minC = col;
-                if (col > maxC) maxC = col;
+            pattern.cells.forEach(([r, c]) => {
+                const nr = r + offsetR;
+                const nc = c + offsetC;
+                if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+                    grid[nr][nc] = 1;
+                }
             });
 
-            const spanR = Math.max(1, maxR - minR + 1);
-            const spanC = Math.max(1, maxC - minC + 1);
-            const maxSpan = Math.max(spanR, spanC, 7);
-            const boxSize = Math.max(3, Math.min(11, Math.floor(72 / maxSpan)));
+            if (pattern.catalysts) {
+                pattern.catalysts.forEach(([r, c]) => {
+                    const nr = r + offsetR;
+                    const nc = c + offsetC;
+                    if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+                        grid[nr][nc] = -1;
+                    }
+                });
+            }
 
-            const startX = Math.floor((96 - spanC * boxSize) / 2);
-            const startY = Math.floor((96 - spanR * boxSize) / 2);
-
-            // Draw regular cells
-            (pattern.cells || []).forEach(([r, col]) => {
-                const x = startX + (col - minC) * boxSize;
-                const y = startY + (r - minR) * boxSize;
-                tCtx.fillStyle = pattern.accent === 'purple' ? '#a855f7' : (pattern.accent === 'emerald' ? '#10b981' : '#38bdf8');
-                tCtx.fillRect(x + 0.5, y + 0.5, Math.max(2, boxSize - 1), Math.max(2, boxSize - 1));
-            });
-
-            // Draw golden catalysts
-            (pattern.catalysts || []).forEach(([r, col]) => {
-                const x = startX + (col - minC) * boxSize;
-                const y = startY + (r - minR) * boxSize;
-                tCtx.fillStyle = '#f59e0b';
-                tCtx.fillRect(x + 0.5, y + 0.5, Math.max(2, boxSize - 1), Math.max(2, boxSize - 1));
-            });
-
-            return c;
+            generation = 0;
+            population = countPopulation(grid);
+            setRunningState(false);
+            updateHUD();
+            centerCamera();
+            dismissPersistentToast();
+            showToast(`Loaded: ${pattern.name}`);
         }
-
-        // --- LOCAL STORAGE SAVED DESIGNS ---
-        const SAVED_DESIGNS_KEY = 'biogenesis_saved_designs_v1';
-        let activeGalleryCategory = 'all';
 
         function getSavedDesigns() {
             try {
-                const raw = localStorage.getItem(SAVED_DESIGNS_KEY);
+                const raw = localStorage.getItem(SAVED_STORAGE_KEY);
                 return raw ? JSON.parse(raw) : [];
             } catch (e) {
                 return [];
@@ -1549,10 +1671,8 @@
 
         function setSavedDesigns(list) {
             try {
-                localStorage.setItem(SAVED_DESIGNS_KEY, JSON.stringify(list));
-            } catch (e) {
-                showToast('Storage full — delete old designs first');
-            }
+                localStorage.setItem(SAVED_STORAGE_KEY, JSON.stringify(list));
+            } catch (e) {}
             updateSavedTabCount();
         }
 
@@ -1562,515 +1682,17 @@
             if (tabBtn) tabBtn.textContent = `⭐ Saved (${count})`;
         }
 
-        function setActiveCategoryPill(cat) {
-            document.querySelectorAll('.cat-pill').forEach(p => {
-                if (p.dataset.cat === cat) {
-                    p.classList.add('active', 'bg-blue-600', 'text-white');
-                    p.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
-                } else {
-                    p.classList.remove('active', 'bg-blue-600', 'text-white');
-                    p.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
-                }
-            });
-        }
-
-        function saveCurrentBoardDesign(overrideName, stayInSavedTab = false) {
+        function extractCurrentDesignData(name) {
             const cells = [];
             const catalysts = [];
-            let minR = ROWS, maxR = -1, minC = COLS, maxC = -1;
+            let minR = GRID_SIZE, minC = GRID_SIZE, maxR = -1, maxC = -1;
 
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
                     if (grid[r][c] !== 0) {
                         if (r < minR) minR = r;
-                        if (r > maxR) maxR = r;
                         if (c < minC) minC = c;
-                        if (c > maxC) maxC = c;
-                    }
-                }
-            }
-
-            if (maxR === -1) {
-                showToast('Draw something on the grid first!');
-                return false;
-            }
-
-            // Centrera koordinaterna kring mönstrets mittpunkt så det laddas perfekt i mitten senare
-            const midR = Math.floor((minR + maxR) / 2);
-            const midC = Math.floor((minC + maxC) / 2);
-
-            for (let r = minR; r <= maxR; r++) {
-                for (let c = minC; c <= maxC; c++) {
-                    if (grid[r][c] > 0) {
-                        cells.push([r - midR, c - midC]);
-                    } else if (grid[r][c] === -1) {
-                        catalysts.push([r - midR, c - midC]);
-                    }
-                }
-            }
-
-            const inputEl = document.getElementById('save-design-name');
-            const savedList = getSavedDesigns();
-            const rawName = typeof overrideName === 'string' ? overrideName : inputEl.value;
-            const customName = rawName.trim() || `Creation #${savedList.length + 1}`;
-            const dateStr = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-
-            const newDesign = {
-                id: 'saved_' + Date.now(),
-                name: customName,
-                icon: '⭐',
-                category: 'saved',
-                accent: 'cyan',
-                desc: `${cells.length + catalysts.length} cells • Saved ${dateStr}`,
-                cells,
-                catalysts
-            };
-
-            savedList.unshift(newDesign);
-            setSavedDesigns(savedList);
-            inputEl.value = '';
-            if (stayInSavedTab) {
-                setActiveCategoryPill('saved');
-                buildPatternGallery('saved');
-            }
-            showToast(`⭐ Saved "${customName}"`);
-            return true;
-        }
-
-        function deleteSavedDesign(id, e) {
-            e.stopPropagation();
-            const updated = getSavedDesigns().filter(item => item.id !== id);
-            setSavedDesigns(updated);
-            buildPatternGallery('saved');
-            showToast('Design deleted');
-        }
-
-        function loadSavedDesign(design) {
-            togglePlay(false);
-            grid = createEmptyGrid();
-            trailGrid = Array.from({ length: ROWS }, () => new Float32Array(COLS));
-            historyStack = [];
-            generation = 0;
-
-            const centerR = Math.floor(ROWS / 2);
-            const centerC = Math.floor(COLS / 2);
-
-            (design.cells || []).forEach(([dr, dc]) => {
-                const r = centerR + dr;
-                const c = centerC + dc;
-                if (r >= 0 && r < ROWS && c >= 0 && c < COLS) grid[r][c] = 1;
-            });
-            (design.catalysts || []).forEach(([dr, dc]) => {
-                const r = centerR + dr;
-                const c = centerC + dc;
-                if (r >= 0 && r < ROWS && c >= 0 && c < COLS) grid[r][c] = -1;
-            });
-
-            recalculatePopulation();
-            updateHUD();
-            centerGrid();
-            render();
-        }
-
-        function buildPatternGallery(filterCategory = 'all') {
-            activeGalleryCategory = filterCategory;
-            const container = document.getElementById('pattern-grid');
-            const saveBar = document.getElementById('save-design-bar');
-            container.innerHTML = '';
-
-            if (filterCategory === 'saved') {
-                saveBar.classList.remove('hidden');
-                const savedList = getSavedDesigns();
-
-                if (savedList.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-span-full py-10 px-4 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
-                            <div class="text-2xl mb-1.5">✨</div>
-                            <div class="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">No saved creations yet</div>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Draw on the grid, enter a name above, and tap <strong>+ Save Grid</strong> to keep it on this device.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                savedList.forEach(design => {
-                    const card = document.createElement('div');
-                    card.className = 'pattern-card group text-left p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-slate-800/80 transition flex items-center gap-3 cursor-pointer active:scale-[0.98]';
-
-                    const thumbWrap = document.createElement('div');
-                    thumbWrap.className = 'w-16 h-16 rounded-xl overflow-hidden border border-slate-300/60 dark:border-slate-700/80 shrink-0 shadow-inner bg-[#070b14]';
-                    const thumbCanvas = renderPatternThumbnail(design);
-                    thumbCanvas.className = 'w-full h-full object-cover';
-                    thumbWrap.appendChild(thumbCanvas);
-
-                    const info = document.createElement('div');
-                    info.className = 'min-w-0 flex-1';
-                    info.innerHTML = `
-                        <div class="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate mb-0.5">
-                            ${design.name}
-                        </div>
-                        <p class="text-[11px] leading-snug text-slate-600 dark:text-slate-400 truncate">
-                            ${design.desc}
-                        </p>
-                    `;
-
-                    const shareBtn = document.createElement('button');
-                    shareBtn.className = 'p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-500/10 transition shrink-0';
-                    shareBtn.title = 'Share Design Link';
-                    shareBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>`;
-                    shareBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        shareDesignObject(design);
-                    });
-
-                    const delBtn = document.createElement('button');
-                    delBtn.className = 'p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition shrink-0';
-                    delBtn.title = 'Delete Saved Design';
-                    delBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>`;
-                    delBtn.addEventListener('click', (e) => deleteSavedDesign(design.id, e));
-
-                    card.appendChild(thumbWrap);
-                    card.appendChild(info);
-                    card.appendChild(shareBtn);
-                    card.appendChild(delBtn);
-
-                    card.addEventListener('click', () => {
-                        loadSavedDesign(design);
-                        modalLib.classList.add('hidden');
-                        showToast(`Loaded: ${design.name}`);
-                    });
-
-                    container.appendChild(card);
-                });
-                return;
-            }
-
-            saveBar.classList.add('hidden');
-            const filtered = filterCategory === 'all'
-                ? PATTERN_CATALOG
-                : PATTERN_CATALOG.filter(p => p.category === filterCategory);
-
-            filtered.forEach(pattern => {
-                const card = document.createElement('button');
-                card.className = 'pattern-card group text-left p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-slate-800/80 transition flex items-center gap-3.5 active:scale-[0.98]';
-
-                const thumbWrap = document.createElement('div');
-                thumbWrap.className = 'w-16 h-16 rounded-xl overflow-hidden border border-slate-300/60 dark:border-slate-700/80 shrink-0 shadow-inner bg-[#070b14]';
-                const thumbCanvas = renderPatternThumbnail(pattern);
-                thumbCanvas.className = 'w-full h-full object-cover';
-                thumbWrap.appendChild(thumbCanvas);
-
-                const info = document.createElement('div');
-                info.className = 'min-w-0 flex-1';
-                info.innerHTML = `
-                    <div class="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate mb-0.5">
-                        ${pattern.icon} ${pattern.name}
-                    </div>
-                    <p class="text-[11px] leading-snug text-slate-600 dark:text-slate-400 line-clamp-2">
-                        ${pattern.desc}
-                    </p>
-                `;
-
-                card.appendChild(thumbWrap);
-                card.appendChild(info);
-
-                card.addEventListener('click', () => {
-                    loadPattern(pattern.id);
-                    modalLib.classList.add('hidden');
-                    showToast(`Loaded: ${pattern.name}`);
-                });
-
-                container.appendChild(card);
-            });
-        }
-
-        function loadPattern(id) {
-            togglePlay(false);
-            grid = createEmptyGrid();
-            trailGrid = Array.from({ length: ROWS }, () => new Float32Array(COLS));
-            historyStack = [];
-            generation = 0;
-
-            const centerR = Math.floor(ROWS / 2);
-            const centerC = Math.floor(COLS / 2);
-            const pattern = PATTERN_CATALOG.find(p => p.id === id);
-
-            if (!pattern) return;
-
-            if (pattern.isRandom) {
-                for (let r = 15; r < ROWS - 15; r++) {
-                    for (let c = 15; c < COLS - 15; c++) {
-                        if (Math.random() < 0.24) {
-                            grid[r][c] = Math.random() < 0.015 ? -1 : 1;
-                        }
-                    }
-                }
-            } else {
-                const [offR, offC] = pattern.offset || [0, 0];
-                (pattern.cells || []).forEach(([dr, dc]) => {
-                    const r = centerR + dr + offR;
-                    const c = centerC + dc + offC;
-                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
-                        grid[r][c] = 1;
-                    }
-                });
-                (pattern.catalysts || []).forEach(([dr, dc]) => {
-                    const r = centerR + dr + offR;
-                    const c = centerC + dc + offC;
-                    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
-                        grid[r][c] = -1;
-                    }
-                });
-            }
-
-            recalculatePopulation();
-            updateHUD();
-            centerGrid();
-            render();
-        }
-
-        // --- UI-KONTROLLER & EVENT LISTENERS ---
-        function togglePlay(forceState) {
-            isRunning = typeof forceState === 'boolean' ? forceState : !isRunning;
-            const iconPlay = document.getElementById('icon-play');
-            const iconPause = document.getElementById('icon-pause');
-
-            if (isRunning) {
-                iconPlay.classList.add('hidden');
-                iconPause.classList.remove('hidden');
-                statusText.textContent = 'Running';
-                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 running-indicator';
-            } else {
-                iconPlay.classList.remove('hidden');
-                iconPause.classList.add('hidden');
-                statusText.textContent = 'Paused';
-                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
-            }
-        }
-
-        document.getElementById('btn-play-pause').addEventListener('click', () => togglePlay());
-        document.getElementById('btn-step-forward').addEventListener('click', () => {
-            if (isRunning) togglePlay(false);
-            stepSimulation();
-        });
-        document.getElementById('btn-step-back').addEventListener('click', stepBackward);
-
-        // Verktygsväljare
-        function selectTool(toolName) {
-            currentTool = toolName;
-            document.querySelectorAll('.tool-btn').forEach(b => {
-                const isSelected = b.dataset.tool === toolName;
-                if (isSelected) {
-                    b.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-600/30');
-                    b.classList.remove('text-slate-600', 'dark:text-slate-300', 'text-amber-500');
-                } else {
-                    b.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-600/30');
-                    if (b.dataset.tool === 'catalyst') {
-                        b.classList.add('text-amber-500');
-                    } else {
-                        b.classList.add('text-slate-600', 'dark:text-slate-300');
-                    }
-                }
-            });
-        }
-
-        document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                selectTool(btn.dataset.tool);
-
-                const names = {
-                    draw: 'Pencil: Draw cells',
-                    catalyst: 'Catalyst: Immortal energy node',
-                    erase: 'Eraser: Remove cells',
-                    pan: 'Pan: Drag to move view'
-                };
-                showToast(names[currentTool]);
-            });
-        });
-
-        // Zoom-knappar
-        document.getElementById('btn-zoom-in').addEventListener('click', () => zoomAt(canvasWidth / 2, canvasHeight / 2, 1.25));
-        document.getElementById('btn-zoom-out').addEventListener('click', () => zoomAt(canvasWidth / 2, canvasHeight / 2, 0.8));
-        document.getElementById('btn-zoom-reset').addEventListener('click', () => {
-            cellSize = 14;
-            centerGrid();
-            document.getElementById('zoom-percent-label').textContent = '100%';
-            render();
-            showToast('Zoom reset to 100%');
-        });
-
-        // Quantum-läge toggle
-        document.getElementById('btn-quantum').addEventListener('click', () => {
-            quantumMode = !quantumMode;
-            const btn = document.getElementById('btn-quantum');
-            const bolt = document.getElementById('icon-quantum-bolt');
-            document.getElementById('quantum-label').textContent = quantumMode ? 'Quantum: ON' : 'Classic';
-
-            if (quantumMode) {
-                btn.className = 'hud-surface bg-indigo-600 border border-indigo-400 text-white shadow-md shadow-indigo-500/35 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition';
-                bolt.setAttribute('fill', 'currentColor');
-            } else {
-                btn.className = 'hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition';
-                bolt.setAttribute('fill', 'none');
-            }
-
-            render();
-            showToast(quantumMode ? 'Quantum Mode: Aging & trails enabled' : 'Classic mode enabled');
-        });
-
-        // Ljud toggle
-        document.getElementById('btn-sound').addEventListener('click', () => {
-            soundEnabled = !soundEnabled;
-            const soundBtn = document.getElementById('btn-sound');
-            document.getElementById('icon-sound-on').classList.toggle('hidden', !soundEnabled);
-            document.getElementById('icon-sound-off').classList.toggle('hidden', soundEnabled);
-            if (soundEnabled) {
-                soundBtn.classList.remove('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
-                soundBtn.classList.add('border-blue-500/40', 'text-blue-500');
-                playBirthNote(3);
-            } else {
-                soundBtn.classList.remove('border-blue-500/40', 'text-blue-500');
-                soundBtn.classList.add('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
-            }
-            showToast(soundEnabled ? 'Generative audio: ON' : 'Audio: OFF');
-        });
-
-        // Tema toggle (Ljust / Mörkt)
-        document.getElementById('btn-theme').addEventListener('click', () => {
-            const html = document.documentElement;
-            const isDark = html.classList.toggle('dark');
-            const bgColor = isDark ? '#090d16' : '#f8fafc';
-            html.style.backgroundColor = bgColor;
-            document.body.style.backgroundColor = bgColor;
-            ['meta-theme-color', 'meta-theme-color-dark', 'meta-theme-color-light'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.setAttribute('content', bgColor);
-            });
-            document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
-            document.getElementById('icon-moon').classList.toggle('hidden', isDark);
-        });
-
-        // Modaler
-        const modalLib = document.getElementById('modal-library');
-        const modalMore = document.getElementById('modal-more');
-
-        document.getElementById('btn-library').addEventListener('click', () => {
-            updateSavedTabCount();
-            setActiveCategoryPill('all');
-            buildPatternGallery('all');
-            modalLib.classList.remove('hidden');
-        });
-        document.getElementById('btn-more').addEventListener('click', () => modalMore.classList.remove('hidden'));
-
-        // Snabbspara via Stjärnknappen på spelbrädet
-        const modalQuickSave = document.getElementById('modal-quick-save');
-        const quickSaveInput = document.getElementById('quick-save-input');
-
-        document.getElementById('btn-quick-save').addEventListener('click', () => {
-            if (population === 0) {
-                showToast('Draw something on the grid first!');
-                return;
-            }
-            if (isRunning) togglePlay(false);
-            quickSaveInput.value = `Creation #${getSavedDesigns().length + 1}`;
-            modalQuickSave.classList.remove('hidden');
-            // Synchronous focus & selection inside the user tap event triggers the iOS/iPadOS keyboard immediately
-            quickSaveInput.focus({ preventScroll: true });
-            quickSaveInput.setSelectionRange(0, quickSaveInput.value.length);
-        });
-
-        function closeQuickSaveModal() {
-            quickSaveInput.blur();
-            modalQuickSave.classList.add('hidden');
-        }
-
-        document.getElementById('close-quick-save').addEventListener('click', closeQuickSaveModal);
-        document.getElementById('cancel-quick-save').addEventListener('click', closeQuickSaveModal);
-        document.getElementById('confirm-quick-save').addEventListener('click', () => {
-            if (saveCurrentBoardDesign(quickSaveInput.value, false)) {
-                closeQuickSaveModal();
-            }
-        });
-        quickSaveInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (saveCurrentBoardDesign(quickSaveInput.value, false)) {
-                    closeQuickSaveModal();
-                }
-            }
-        });
-
-        document.getElementById('btn-save-design').addEventListener('click', () => saveCurrentBoardDesign(undefined, true));
-        document.getElementById('save-design-name').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                saveCurrentBoardDesign(undefined, true);
-            }
-        });
-
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', () => {
-                modalLib.classList.add('hidden');
-                modalMore.classList.add('hidden');
-            });
-        });
-
-        // Kategori-flikar i mönsterbiblioteket
-        document.querySelectorAll('.cat-pill').forEach(pill => {
-            pill.addEventListener('click', () => {
-                setActiveCategoryPill(pill.dataset.cat);
-                buildPatternGallery(pill.dataset.cat);
-            });
-        });
-
-        // Inställningar i More-modalen
-        document.getElementById('speed-slider').addEventListener('input', (e) => {
-            fps = parseInt(e.target.value, 10);
-            document.getElementById('speed-val').textContent = `${fps} FPS`;
-        });
-
-        document.getElementById('rule-select').addEventListener('change', (e) => {
-            const val = e.target.value;
-            const [bPart, sPart] = val.split('/');
-            currentRule = {
-                born: bPart.replace('B', '').split('').map(Number),
-                survive: sPart.replace('S', '').split('').map(Number)
-            };
-            showToast(`Rule changed to ${val}`);
-        });
-
-        document.getElementById('wrap-toggle').addEventListener('change', (e) => {
-            wrapEdges = e.target.checked;
-        });
-
-        function clearEntireGrid() {
-            togglePlay(false);
-            grid = createEmptyGrid();
-            trailGrid = Array.from({ length: ROWS }, () => new Float32Array(COLS));
-            historyStack = [];
-            generation = 0;
-            population = 0;
-            updateHUD();
-            render();
-            modalMore.classList.add('hidden');
-            showToast('Grid cleared');
-        }
-
-        document.getElementById('btn-clear').addEventListener('click', clearEntireGrid);
-        document.getElementById('btn-quick-clear').addEventListener('click', clearEntireGrid);
-
-        // --- SHARE DESIGN VIA COMPACT URL ---
-        function extractCenteredBoardData(name = 'Shared Creation') {
-            const cells = [];
-            const catalysts = [];
-            let minR = ROWS, maxR = -1, minC = COLS, maxC = -1;
-
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    if (grid[r][c] !== 0) {
-                        if (r < minR) minR = r;
                         if (r > maxR) maxR = r;
-                        if (c < minC) minC = c;
                         if (c > maxC) maxC = c;
                     }
                 }
@@ -2078,169 +1700,528 @@
 
             if (maxR === -1) return null;
 
-            const midR = Math.floor((minR + maxR) / 2);
-            const midC = Math.floor((minC + maxC) / 2);
-
             for (let r = minR; r <= maxR; r++) {
                 for (let c = minC; c <= maxC; c++) {
-                    if (grid[r][c] > 0) cells.push([r - midR, c - midC]);
-                    else if (grid[r][c] === -1) catalysts.push([r - midR, c - midC]);
+                    if (grid[r][c] === -1) {
+                        catalysts.push([r - minR, c - minC]);
+                    } else if (grid[r][c] > 0) {
+                        cells.push([r - minR, c - minC]);
+                    }
                 }
             }
 
-            return { name, cells, catalysts };
+            return {
+                id: `saved_${Date.now()}`,
+                name: name.trim() || `Creation #${getSavedDesigns().length + 1}`,
+                cat: 'saved',
+                desc: `${cells.length + catalysts.length} cells • Saved locally`,
+                cells,
+                catalysts
+            };
         }
 
+        function loadSavedDesign(design) {
+            loadPattern(design);
+        }
+
+        // URL Hash Sharing (#d=...)
         function encodeDesignToUrl(design) {
             const payload = {
-                n: (design.name || 'Bio Genesis Creation').slice(0, 32),
-                c: (design.cells || []).map(([r, c]) => `${r.toString(36)},${c.toString(36)}`).join(';'),
-                k: (design.catalysts || []).map(([r, c]) => `${r.toString(36)},${c.toString(36)}`).join(';')
+                n: design.name,
+                c: design.cells,
+                k: design.catalysts || []
             };
             const jsonStr = JSON.stringify(payload);
-            const b64 = btoa(unescape(encodeURIComponent(jsonStr)))
+            const encoded = btoa(unescape(encodeURIComponent(jsonStr)))
                 .replace(/\+/g, '-')
                 .replace(/\//g, '_')
                 .replace(/=+$/, '');
             const baseUrl = window.location.href.split('#')[0];
-            return `${baseUrl}#d=${b64}`;
+            return `${baseUrl}#d=${encoded}`;
         }
 
         function decodeDesignFromHash() {
             try {
-                const hash = window.location.hash || '';
-                if (!hash.startsWith('#d=')) return null;
+                const hash = window.location.hash;
+                if (!hash || !hash.startsWith('#d=')) return null;
                 let b64 = hash.slice(3).replace(/-/g, '+').replace(/_/g, '/');
                 while (b64.length % 4) b64 += '=';
                 const jsonStr = decodeURIComponent(escape(atob(b64)));
                 const payload = JSON.parse(jsonStr);
-
-                const parsePairs = (str) => {
-                    if (!str) return [];
-                    return str.split(';').map(pair => {
-                        const [rStr, cStr] = pair.split(',');
-                        return [parseInt(rStr, 36), parseInt(cStr, 36)];
-                    }).filter(([r, c]) => !Number.isNaN(r) && !Number.isNaN(c));
-                };
-
-                const cells = parsePairs(payload.c);
-                const catalysts = parsePairs(payload.k);
-                if (cells.length === 0 && catalysts.length === 0) return null;
-
+                if (!payload || !Array.isArray(payload.c)) return null;
                 return {
+                    id: 'shared_design',
                     name: payload.n || 'Shared Creation',
-                    cells,
-                    catalysts
+                    cat: 'saved',
+                    desc: 'Shared via link',
+                    cells: payload.c,
+                    catalysts: Array.isArray(payload.k) ? payload.k : []
                 };
             } catch (e) {
                 return null;
             }
         }
 
-        function copyTextFallback(text) {
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.setAttribute('readonly', '');
-            ta.style.position = 'fixed';
-            ta.style.opacity = '0';
-            document.body.appendChild(ta);
-            ta.select();
-            ta.setSelectionRange(0, text.length);
-            try {
-                document.execCommand('copy');
-            } catch (e) {}
-            document.body.removeChild(ta);
-        }
-
         async function shareDesignObject(design) {
             const shareUrl = encodeDesignToUrl(design);
-            try {
-                window.history.replaceState(null, '', '#d=' + shareUrl.split('#d=')[1]);
-            } catch (e) {}
-
             if (navigator.share) {
                 try {
                     await navigator.share({
-                        title: `Bio Genesis — ${design.name}`,
-                        text: `Check out "${design.name}" in Bio Genesis!`,
+                        title: `Bio Genesis: ${design.name}`,
+                        text: `Check out my "${design.name}" creation in Bio Genesis!`,
                         url: shareUrl
                     });
-                    showToast(`Shared "${design.name}"`);
                     return;
                 } catch (err) {
                     if (err && err.name === 'AbortError') return;
                 }
             }
-
-            copyTextFallback(shareUrl);
-            showToast(`🔗 Link copied for "${design.name}"!`);
+            // Clipboard fallback
+            const tempInput = document.createElement('input');
+            tempInput.value = shareUrl;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast('🔗 Share link copied to clipboard!');
         }
 
+        // --- PATTERN LIBRARY RENDERER ---
+        function drawMiniPreview(previewCanvas, item) {
+            const pCtx = previewCanvas.getContext('2d');
+            const w = previewCanvas.width;
+            const h = previewCanvas.height;
+            const isDark = document.documentElement.classList.contains('dark');
+
+            pCtx.fillStyle = isDark ? '#090d16' : '#f1f5f9';
+            pCtx.fillRect(0, 0, w, h);
+
+            const allPts = [...(item.cells || []), ...(item.catalysts || [])];
+            if (allPts.length === 0) return;
+
+            let maxR = 0, maxC = 0;
+            allPts.forEach(([r, c]) => {
+                if (r > maxR) maxR = r;
+                if (c > maxC) maxC = c;
+            });
+
+            const spanR = maxR + 1;
+            const spanC = maxC + 1;
+            const scale = Math.min((w - 16) / spanC, (h - 16) / spanR, 10);
+            const ox = (w - spanC * scale) / 2;
+            const oy = (h - spanR * scale) / 2;
+
+            pCtx.fillStyle = isDark ? '#38bdf8' : '#2563eb';
+            (item.cells || []).forEach(([r, c]) => {
+                pCtx.fillRect(ox + c * scale, oy + r * scale, Math.max(1.5, scale - 1), Math.max(1.5, scale - 1));
+            });
+
+            pCtx.fillStyle = '#f59e0b';
+            (item.catalysts || []).forEach(([r, c]) => {
+                pCtx.fillRect(ox + c * scale, oy + r * scale, Math.max(2, scale - 1), Math.max(2, scale - 1));
+            });
+        }
+
+        function renderPatternCards() {
+            const container = document.getElementById('pattern-grid');
+            const saveBar = document.getElementById('save-design-bar');
+            container.innerHTML = '';
+
+            let items = [];
+            if (currentCategory === 'saved') {
+                saveBar.classList.remove('hidden');
+                items = getSavedDesigns();
+            } else {
+                saveBar.classList.add('hidden');
+                items = currentCategory === 'all'
+                    ? PATTERN_CATALOG
+                    : PATTERN_CATALOG.filter(p => p.cat === currentCategory);
+            }
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-10 px-4 text-slate-500 dark:text-slate-400 text-xs">
+                        No saved designs yet. Draw on the grid and tap the Star icon or "+ Save Grid" above!
+                    </div>
+                `;
+                return;
+            }
+
+            items.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = 'group bg-slate-50 dark:bg-slate-800/70 hover:bg-blue-500/10 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition active:scale-[0.99]';
+
+                const miniCanvas = document.createElement('canvas');
+                miniCanvas.width = 72;
+                miniCanvas.height = 72;
+                miniCanvas.className = 'w-16 h-16 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0';
+                drawMiniPreview(miniCanvas, item);
+
+                const info = document.createElement('div');
+                info.className = 'flex-1 min-w-0';
+                info.innerHTML = `
+                    <div class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate group-hover:text-blue-500 transition">${item.name}</div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug">${item.desc}</div>
+                `;
+
+                card.appendChild(miniCanvas);
+                card.appendChild(info);
+
+                if (currentCategory === 'saved') {
+                    const actions = document.createElement('div');
+                    actions.className = 'flex items-center gap-1 shrink-0';
+
+                    const shareBtn = document.createElement('button');
+                    shareBtn.className = 'p-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 transition';
+                    shareBtn.title = 'Share Design';
+                    shareBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>`;
+                    shareBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        shareDesignObject(item);
+                    });
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition';
+                    delBtn.title = 'Delete Design';
+                    delBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>`;
+                    delBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const updated = getSavedDesigns().filter(d => d.id !== item.id);
+                        setSavedDesigns(updated);
+                        renderPatternCards();
+                        showToast('Design deleted');
+                    });
+
+                    actions.appendChild(shareBtn);
+                    actions.appendChild(delBtn);
+                    card.appendChild(actions);
+                }
+
+                card.addEventListener('click', () => {
+                    loadPattern(item);
+                    document.getElementById('modal-library').classList.add('hidden');
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        // --- UI EVENT LISTENERS ---
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeTool = btn.dataset.tool;
+                document.querySelectorAll('.tool-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow-md');
+                    if (b.dataset.tool === 'catalyst') {
+                        b.classList.add('text-amber-500');
+                    } else {
+                        b.classList.add('text-slate-600', 'dark:text-slate-300');
+                    }
+                });
+                btn.classList.remove('text-slate-600', 'dark:text-slate-300', 'text-amber-500');
+                btn.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-md');
+            });
+        });
+
+        // Play / Pause
+        document.getElementById('btn-play-pause').addEventListener('click', () => {
+            if (!isRunning && population === 0) {
+                showToast('Draw some cells or load a pattern first!');
+                return;
+            }
+            setRunningState(!isRunning);
+        });
+
+        // Step Forward
+        document.getElementById('btn-step-forward').addEventListener('click', () => {
+            setRunningState(false);
+            stepSimulation(false);
+            render();
+        });
+
+        // Step Backward
+        document.getElementById('btn-step-back').addEventListener('click', () => {
+            if (historyStack.length === 0) return;
+            setRunningState(false);
+            const prev = historyStack.pop();
+            grid = prev.grid;
+            generation = prev.generation;
+            population = prev.population;
+            trailGrid = Array.from({ length: GRID_SIZE }, () => new Float32Array(GRID_SIZE));
+            updateHUD();
+            updateStepBackButton();
+            render();
+        });
+
+        // Quantum Toggle
+        const btnQuantum = document.getElementById('btn-quantum');
+        const quantumLabel = document.getElementById('quantum-label');
+        const quantumBolt = document.getElementById('icon-quantum-bolt');
+        btnQuantum.addEventListener('click', () => {
+            quantumMode = !quantumMode;
+            if (quantumMode) {
+                btnQuantum.className = 'hud-surface bg-indigo-600 border border-indigo-400 text-white shadow-md shadow-indigo-500/35 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition';
+                quantumBolt.setAttribute('fill', 'currentColor');
+                quantumLabel.textContent = 'Quantum: ON';
+                showToast('Quantum Mode ON: Cell aging & ghost trails');
+            } else {
+                btnQuantum.className = 'hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition';
+                quantumBolt.setAttribute('fill', 'none');
+                quantumLabel.textContent = 'Classic Mode';
+                trailGrid = Array.from({ length: GRID_SIZE }, () => new Float32Array(GRID_SIZE));
+                showToast('Classic Mode: Pure Conway rendering');
+            }
+            saveUserSettings();
+            render();
+        });
+
+        // Audio Toggle
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            const btnSound = document.getElementById('btn-sound');
+            const iconOff = document.getElementById('icon-sound-off');
+            const iconOn = document.getElementById('icon-sound-on');
+            if (soundEnabled) {
+                iconOff.classList.add('hidden');
+                iconOn.classList.remove('hidden');
+                btnSound.classList.remove('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
+                btnSound.classList.add('border-blue-500/40', 'text-blue-500');
+                playBirthNote(1.2);
+                showToast('Generative Audio ON');
+            } else {
+                iconOn.classList.add('hidden');
+                iconOff.classList.remove('hidden');
+                btnSound.classList.remove('border-blue-500/40', 'text-blue-500');
+                btnSound.classList.add('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
+                showToast('Audio Muted');
+            }
+            saveUserSettings();
+        });
+
+        // Theme Toggle
+        document.getElementById('btn-theme').addEventListener('click', () => {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            const bg = isDark ? '#090d16' : '#f8fafc';
+            html.style.backgroundColor = bg;
+            document.getElementById('meta-theme-color').setAttribute('content', bg);
+            document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
+            document.getElementById('icon-moon').classList.toggle('hidden', isDark);
+            saveUserSettings();
+            render();
+        });
+
+        // Audio Toggle
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            const btnSound = document.getElementById('btn-sound');
+            const iconOff = document.getElementById('icon-sound-off');
+            const iconOn = document.getElementById('icon-sound-on');
+            if (soundEnabled) {
+                iconOff.classList.add('hidden');
+                iconOn.classList.remove('hidden');
+                btnSound.classList.remove('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
+                btnSound.classList.add('border-blue-500/40', 'text-blue-500');
+                playBirthNote(1.2);
+                showToast('Generative Audio ON');
+            } else {
+                iconOn.classList.add('hidden');
+                iconOff.classList.remove('hidden');
+                btnSound.classList.remove('border-blue-500/40', 'text-blue-500');
+                btnSound.classList.add('border-rose-500/40', 'text-rose-500', 'dark:text-rose-400');
+                showToast('Audio Muted');
+            }
+        });
+
+        // Theme Toggle
+        document.getElementById('btn-theme').addEventListener('click', () => {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            const bg = isDark ? '#090d16' : '#f8fafc';
+            html.style.backgroundColor = bg;
+            document.getElementById('meta-theme-color').setAttribute('content', bg);
+            document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
+            document.getElementById('icon-moon').classList.toggle('hidden', isDark);
+            render();
+        });
+
+        // Zoom Controls
+        document.getElementById('btn-zoom-in').addEventListener('click', () => zoomAt(1.25));
+        document.getElementById('btn-zoom-out').addEventListener('click', () => zoomAt(0.8));
+        document.getElementById('btn-zoom-reset').addEventListener('click', () => {
+            cellSize = DEFAULT_CELL_SIZE;
+            updateZoomLabel();
+            centerCamera();
+            showToast('Zoom reset to 100%');
+        });
+
+        // Quick Clear Grid
+        function clearEntireGrid() {
+            pushHistory();
+            setRunningState(false);
+            grid = createEmptyGrid();
+            generation = 0;
+            population = 0;
+            updateHUD();
+            render();
+            showToast('Grid cleared');
+        }
+        document.getElementById('btn-quick-clear').addEventListener('click', clearEntireGrid);
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            clearEntireGrid();
+            document.getElementById('modal-more').classList.add('hidden');
+        });
+
+        // Quick Save Modal (Synchronous focus for iOS keyboard)
+        const modalQuickSave = document.getElementById('modal-quick-save');
+        const quickSaveInput = document.getElementById('quick-save-input');
+
+        document.getElementById('btn-quick-save').addEventListener('click', () => {
+            if (population === 0) {
+                showToast('Draw something on the grid before saving!');
+                return;
+            }
+            const nextIdx = getSavedDesigns().length + 1;
+            quickSaveInput.value = `Creation #${nextIdx}`;
+            modalQuickSave.classList.remove('hidden');
+            quickSaveInput.focus();
+            quickSaveInput.select();
+        });
+
+        function closeQuickSaveModal() {
+            modalQuickSave.classList.add('hidden');
+            quickSaveInput.blur();
+        }
+
+        function confirmQuickSaveDesign() {
+            const design = extractCurrentDesignData(quickSaveInput.value);
+            if (!design) {
+                showToast('Grid is empty!');
+                closeQuickSaveModal();
+                return;
+            }
+            const list = getSavedDesigns();
+            list.unshift(design);
+            setSavedDesigns(list);
+            closeQuickSaveModal();
+            showToast(`⭐ Saved "${design.name}" to your library!`);
+        }
+
+        document.getElementById('close-quick-save').addEventListener('click', closeQuickSaveModal);
+        document.getElementById('cancel-quick-save').addEventListener('click', closeQuickSaveModal);
+        document.getElementById('confirm-quick-save').addEventListener('click', confirmQuickSaveDesign);
+        quickSaveInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmQuickSaveDesign();
+            }
+        });
+
+        // Quick Share Current Grid
         document.getElementById('btn-quick-share').addEventListener('click', () => {
-            const current = extractCenteredBoardData('Bio Genesis Creation');
-            if (!current) {
+            const design = extractCurrentDesignData('Bio Genesis Creation');
+            if (!design) {
+                showToast('Draw something on the grid to share!');
+                return;
+            }
+            shareDesignObject(design);
+        });
+
+        // Save inside Library modal
+        document.getElementById('btn-save-design').addEventListener('click', () => {
+            const nameInput = document.getElementById('save-design-name');
+            const design = extractCurrentDesignData(nameInput.value);
+            if (!design) {
                 showToast('Draw something on the grid first!');
                 return;
             }
-            shareDesignObject(current);
+            const list = getSavedDesigns();
+            list.unshift(design);
+            setSavedDesigns(list);
+            nameInput.value = '';
+            renderPatternCards();
+            showToast(`⭐ Saved "${design.name}"!`);
         });
 
-        // Tangentbordsgenvägar för dator
+        // Pattern Library Modal & Categories
+        document.getElementById('btn-library').addEventListener('click', () => {
+            updateSavedTabCount();
+            renderPatternCards();
+            document.getElementById('modal-library').classList.remove('hidden');
+        });
+
+        document.querySelectorAll('.cat-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                currentCategory = pill.dataset.cat;
+                document.querySelectorAll('.cat-pill').forEach(p => {
+                    p.classList.remove('active', 'bg-blue-600', 'text-white');
+                    p.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                });
+                pill.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                pill.classList.add('active', 'bg-blue-600', 'text-white');
+                renderPatternCards();
+            });
+        });
+
+        // More Settings Modal
+        document.getElementById('btn-more').addEventListener('click', () => {
+            document.getElementById('modal-more').classList.remove('hidden');
+        });
+
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('modal-library').classList.add('hidden');
+                document.getElementById('modal-more').classList.add('hidden');
+            });
+        });
+
+        // Speed, Rule & Wrap Controls
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            targetFPS = Number(e.target.value);
+            document.getElementById('speed-val').textContent = `${targetFPS} FPS`;
+            saveUserSettings();
+        });
+
+        document.getElementById('rule-select').addEventListener('change', (e) => {
+            currentRule = e.target.value;
+            parseRuleString(currentRule);
+            saveUserSettings();
+            showToast(`Ruleset: ${currentRule}`);
+        });
+
+        document.getElementById('wrap-toggle').addEventListener('change', (e) => {
+            wrapEdges = e.target.checked;
+            saveUserSettings();
+        });
+
+        document.getElementById('rule-select').addEventListener('change', (e) => {
+            currentRule = e.target.value;
+            parseRuleString(currentRule);
+            showToast(`Ruleset: ${currentRule}`);
+        });
+
+        document.getElementById('wrap-toggle').addEventListener('change', (e) => {
+            wrapEdges = e.target.checked;
+        });
+
+        // Keyboard Shortcuts (Desktop)
         window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
             if (e.code === 'Space') {
                 e.preventDefault();
-                togglePlay();
+                document.getElementById('btn-play-pause').click();
             } else if (e.code === 'ArrowRight') {
-                if (isRunning) togglePlay(false);
-                stepSimulation();
+                e.preventDefault();
+                document.getElementById('btn-step-forward').click();
             } else if (e.code === 'ArrowLeft') {
-                stepBackward();
+                e.preventDefault();
+                document.getElementById('btn-step-back').click();
             }
         });
 
-        // --- APP-IKON GENERATOR (För iPhone/iPad Hemskärm & Favicon) ---
-        function generateHomeScreenIcon() {
-            try {
-                const svgEl = document.getElementById('brand-app-icon');
-                const serializer = new XMLSerializer();
-                const svgStr = serializer.serializeToString(svgEl);
-                const img = new Image();
-                const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
-                const url = URL.createObjectURL(svgBlob);
-
-                img.onload = function () {
-                    const iconCanvas = document.createElement('canvas');
-                    iconCanvas.width = 180;
-                    iconCanvas.height = 180;
-                    const iconCtx = iconCanvas.getContext('2d');
-                    iconCtx.drawImage(img, 0, 0, 180, 180);
-                    const pngDataUrl = iconCanvas.toDataURL('image/png');
-
-                    document.getElementById('apple-touch-icon-link').href = pngDataUrl;
-                    document.getElementById('app-icon-link').href = pngDataUrl;
-                    URL.revokeObjectURL(url);
-                };
-                img.src = url;
-            } catch (e) {
-                // Fallback om SVG-serialisering blockeras
-            }
-        }
-
-        // --- STARTSKÄRM & HJÄLP-HANTERING ---
+        // --- WELCOME SCREEN & HELP ---
         const welcomeScreen = document.getElementById('welcome-screen');
         const chkShowWelcome = document.getElementById('chk-show-welcome');
-        const WELCOME_PREF_KEY = 'biogenesis_show_welcome';
-
-        // Ladda sparad inställning för startskärmen
-        const savedWelcomePref = localStorage.getItem(WELCOME_PREF_KEY);
-        if (savedWelcomePref === 'false') {
-            chkShowWelcome.checked = false;
-            welcomeScreen.classList.add('hidden', 'opacity-0', 'pointer-events-none');
-        }
-
-        chkShowWelcome.addEventListener('change', (e) => {
-            localStorage.setItem(WELCOME_PREF_KEY, e.target.checked ? 'true' : 'false');
-        });
 
         function dismissWelcomeScreen() {
             localStorage.setItem(WELCOME_PREF_KEY, chkShowWelcome.checked ? 'true' : 'false');
@@ -2249,88 +2230,61 @@
             if (population === 0) {
                 showToast('Grid is ready — draw your first cells!', true);
             }
+            showInstallPromptIfEligible();
         }
 
         document.getElementById('btn-start-game').addEventListener('click', dismissWelcomeScreen);
-
-        // Stäng även startskärmen om man trycker/klickar utanför själva modal-kortet
-        welcomeScreen.addEventListener('click', (e) => {
-            if (e.target === welcomeScreen) {
-                dismissWelcomeScreen();
-            }
-        });
-
         document.getElementById('btn-help').addEventListener('click', () => {
-            if (isRunning) togglePlay(false);
-            welcomeScreen.classList.remove('hidden');
-            requestAnimationFrame(() => {
-                welcomeScreen.classList.remove('opacity-0', 'pointer-events-none');
-            });
+            setRunningState(false);
+            welcomeScreen.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
         });
 
-        // --- INITIERING ---
-        // Säkerställ att hemskärmsappen (PWA) alltid hämtar senaste versionen vid start/återaktivering
-        // utan att röra sparade designer i localStorage
-        const APP_BUILD_VERSION = '2026.11.17.1';
-        const LAST_SYNC_KEY = 'biogenesis_last_sync_ts';
-
-        async function checkAndRefreshLatestVersion(forceReload = false) {
-            try {
-                if ('caches' in window) {
-                    const keys = await caches.keys();
-                    await Promise.all(keys.map(k => caches.delete(k)));
+        // --- MAIN ANIMATION LOOP ---
+        function gameLoop(timestamp) {
+            if (isRunning) {
+                const interval = 1000 / targetFPS;
+                if (timestamp - lastStepTime >= interval) {
+                    lastStepTime = timestamp;
+                    stepSimulation(false);
+                    render();
                 }
-                const isStandalone = window.navigator.standalone === true ||
-                    window.matchMedia('(display-mode: standalone)').matches;
-
-                if (isStandalone && forceReload) {
-                    const lastSync = parseInt(sessionStorage.getItem(LAST_SYNC_KEY) || '0', 10);
-                    const now = Date.now();
-                    // Ladda om högst en gång per 30 sekunder för att undvika omladdningsloopar
-                    if (now - lastSync > 30000) {
-                        sessionStorage.setItem(LAST_SYNC_KEY, String(now));
-                        const baseUrl = window.location.href.split('#')[0].split('?')[0];
-                        const currentHash = window.location.hash || '';
-                        window.location.replace(`${baseUrl}?v=${now}${currentHash}`);
-                    }
-                }
-            } catch (e) {
-                // Ignorera nätverksfel i offline-läge så appen och sparade designer alltid fungerar
             }
+            requestAnimationFrame(gameLoop);
         }
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                checkAndRefreshLatestVersion(true);
-            }
-        });
-
-        window.addEventListener('pageshow', (event) => {
-            if (event.persisted) {
-                checkAndRefreshLatestVersion(true);
-            }
-        });
-
+        // --- INITIALIZATION ON WINDOW LOAD ---
         window.addEventListener('resize', resizeCanvas);
-        window.onload = () => {
-            checkAndRefreshLatestVersion(false);
-            generateHomeScreenIcon();
+
+        window.onload = function () {
+            grid = createEmptyGrid();
+            loadUserSettings();
+            generateAppIconsAndManifest();
             updateSavedTabCount();
-            buildPatternGallery('all');
+            updateZoomLabel();
             resizeCanvas();
+            centerCamera();
+
+            const savedWelcomePref = localStorage.getItem(WELCOME_PREF_KEY);
+            if (savedWelcomePref === 'false') {
+                chkShowWelcome.checked = false;
+                welcomeScreen.classList.add('hidden', 'opacity-0', 'pointer-events-none');
+            }
 
             const sharedDesign = decodeDesignFromHash();
             if (sharedDesign) {
                 welcomeScreen.classList.add('hidden', 'opacity-0', 'pointer-events-none');
                 loadSavedDesign(sharedDesign);
                 showToast(`Loaded shared design: ${sharedDesign.name}`);
+                setTimeout(showInstallPromptIfEligible, 900);
             } else {
-                // Starta med helt tom spelplan
-                grid = createEmptyGrid();
+                // Start with empty grid
                 population = 0;
                 generation = 0;
                 updateHUD();
                 render();
+                if (savedWelcomePref === 'false') {
+                    setTimeout(showInstallPromptIfEligible, 900);
+                }
             }
             requestAnimationFrame(gameLoop);
         };
