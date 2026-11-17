@@ -47,6 +47,10 @@
         }
         canvas {
             display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
         /* Snygga glasmorfism-effekter med hög skärpa på iOS */
         .glass {
             backdrop-filter: blur(12px);
@@ -268,9 +272,9 @@
     <footer class="fixed bottom-0 left-0 right-0 z-20 pb-[calc(env(safe-area-inset-bottom)+12px)] px-3 sm:px-4 pt-2 pointer-events-none">
         <div class="max-w-lg mx-auto flex items-center justify-between gap-2 sm:gap-3">
             
-            <!-- Vänster: Mönsterbibliotek -->
-            <button id="btn-library" class="pointer-events-auto glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 w-13 h-13 sm:w-14 sm:h-14 rounded-full shadow-xl flex items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-105 active:scale-95 transition shrink-0" title="Pattern Library">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+            <!-- Vänster: Mönsterbibliotek (Stor 56x56px touch-yta på iPhone/iPad) -->
+            <button id="btn-library" class="pointer-events-auto glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-105 active:scale-95 transition shrink-0" title="Pattern Library">
+                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
             </button>
 
             <!-- Mitten: Huvudkontroller -->
@@ -292,9 +296,9 @@
                 </button>
             </div>
 
-            <!-- Höger: Fler alternativ / Inställningar -->
-            <button id="btn-more" class="pointer-events-auto glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 w-13 h-13 sm:w-14 sm:h-14 rounded-full shadow-xl flex items-center justify-center text-slate-700 dark:text-slate-100 hover:scale-105 active:scale-95 transition shrink-0" title="Simulation Settings & Rules">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
+            <!-- Höger: Fler alternativ / Inställningar (Stor 56x56px touch-yta) -->
+            <button id="btn-more" class="pointer-events-auto glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-slate-700 dark:text-slate-100 hover:scale-105 active:scale-95 transition shrink-0" title="Simulation Settings & Rules">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
             </button>
 
         </div>
@@ -628,11 +632,17 @@
         }
 
         // --- RENDERING (CANVAS) ---
+        let canvasWidth = window.innerWidth;
+        let canvasHeight = window.innerHeight;
+
         function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvasWidth = rect.width || window.innerWidth;
+            canvasHeight = rect.height || window.innerHeight;
             const dpr = window.devicePixelRatio || 1;
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
-            ctx.scale(dpr, dpr);
+            canvas.width = Math.round(canvasWidth * dpr);
+            canvas.height = Math.round(canvasHeight * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             centerGrid();
             render();
         }
@@ -640,14 +650,14 @@
         function centerGrid() {
             const totalW = COLS * cellSize;
             const totalH = ROWS * cellSize;
-            offsetX = (window.innerWidth - totalW) / 2;
-            offsetY = (window.innerHeight - totalH) / 2;
+            offsetX = (canvasWidth - totalW) / 2;
+            offsetY = (canvasHeight - totalH) / 2;
         }
 
         function render() {
             const isDark = document.documentElement.classList.contains('dark');
-            const w = window.innerWidth;
-            const h = window.innerHeight;
+            const w = canvasWidth;
+            const h = canvasHeight;
 
             // Bakgrund
             ctx.fillStyle = isDark ? '#090d16' : '#f8fafc';
@@ -757,9 +767,18 @@
         let initialPinchDist = null;
         let initialCellSize = cellSize;
 
+        function getCanvasCoords(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
         function applyToolAt(clientX, clientY) {
-            const col = Math.floor((clientX - offsetX) / cellSize);
-            const row = Math.floor((clientY - offsetY) / cellSize);
+            const pos = getCanvasCoords(clientX, clientY);
+            const col = Math.floor((pos.x - offsetX) / cellSize);
+            const row = Math.floor((pos.y - offsetY) / cellSize);
 
             if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
                 if (currentTool === 'draw' && grid[row][col] === 0) {
@@ -782,7 +801,7 @@
         // Mus-händelser
         canvas.addEventListener('mousedown', (e) => {
             isPointerDown = true;
-            lastPointerPos = { x: e.clientX, y: e.clientY };
+            lastPointerPos = getCanvasCoords(e.clientX, e.clientY);
             if (currentTool !== 'pan' && e.button === 0) {
                 applyToolAt(e.clientX, e.clientY);
             }
@@ -790,13 +809,14 @@
 
         window.addEventListener('mousemove', (e) => {
             if (!isPointerDown) return;
+            const pos = getCanvasCoords(e.clientX, e.clientY);
             if (currentTool === 'pan' || e.buttons === 4 || e.shiftKey) {
-                offsetX += e.clientX - lastPointerPos.x;
-                offsetY += e.clientY - lastPointerPos.y;
+                offsetX += pos.x - lastPointerPos.x;
+                offsetY += pos.y - lastPointerPos.y;
             } else {
                 applyToolAt(e.clientX, e.clientY);
             }
-            lastPointerPos = { x: e.clientX, y: e.clientY };
+            lastPointerPos = pos;
         });
 
         window.addEventListener('mouseup', () => {
@@ -806,17 +826,18 @@
         // Mushjul för zoom
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
+            const pos = getCanvasCoords(e.clientX, e.clientY);
             const zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
-            zoomAt(e.clientX, e.clientY, zoomFactor);
+            zoomAt(pos.x, pos.y, zoomFactor);
         }, { passive: false });
 
         // Touch-händelser (1 finger = rita/panorera, 2 fingrar = pinch-zoom & panorera)
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
             if (e.touches.length === 1) {
                 isPointerDown = true;
                 const t = e.touches[0];
-                lastPointerPos = { x: t.clientX, y: t.clientY };
+                lastPointerPos = getCanvasCoords(t.clientX, t.clientY);
                 if (currentTool !== 'pan') {
                     applyToolAt(t.clientX, t.clientY);
                 }
@@ -829,16 +850,17 @@
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
             if (e.touches.length === 1 && isPointerDown) {
                 const t = e.touches[0];
+                const pos = getCanvasCoords(t.clientX, t.clientY);
                 if (currentTool === 'pan') {
-                    offsetX += t.clientX - lastPointerPos.x;
-                    offsetY += t.clientY - lastPointerPos.y;
+                    offsetX += pos.x - lastPointerPos.x;
+                    offsetY += pos.y - lastPointerPos.y;
                 } else {
                     applyToolAt(t.clientX, t.clientY);
                 }
-                lastPointerPos = { x: t.clientX, y: t.clientY };
+                lastPointerPos = pos;
             } else if (e.touches.length === 2 && initialPinchDist) {
                 const dist = getPinchDistance(e.touches);
                 const center = getPinchCenter(e.touches);
@@ -865,9 +887,10 @@
         }
 
         function getPinchCenter(touches) {
+            const rect = canvas.getBoundingClientRect();
             return {
-                x: (touches[0].clientX + touches[1].clientX) / 2,
-                y: (touches[0].clientY + touches[1].clientY) / 2
+                x: ((touches[0].clientX + touches[1].clientX) / 2) - rect.left,
+                y: ((touches[0].clientY + touches[1].clientY) / 2) - rect.top
             };
         }
 
@@ -1023,8 +1046,8 @@
         });
 
         // Zoom-knappar
-        document.getElementById('btn-zoom-in').addEventListener('click', () => zoomAt(window.innerWidth / 2, window.innerHeight / 2, 1.25));
-        document.getElementById('btn-zoom-out').addEventListener('click', () => zoomAt(window.innerWidth / 2, window.innerHeight / 2, 0.8));
+        document.getElementById('btn-zoom-in').addEventListener('click', () => zoomAt(canvasWidth / 2, canvasHeight / 2, 1.25));
+        document.getElementById('btn-zoom-out').addEventListener('click', () => zoomAt(canvasWidth / 2, canvasHeight / 2, 0.8));
         document.getElementById('btn-zoom-reset').addEventListener('click', () => {
             cellSize = 14;
             centerGrid();
