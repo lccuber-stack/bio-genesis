@@ -1952,13 +1952,13 @@
             if (isRunning) togglePlay(false);
             quickSaveInput.value = `Creation #${getSavedDesigns().length + 1}`;
             modalQuickSave.classList.remove('hidden');
-            setTimeout(() => {
-                quickSaveInput.focus();
-                quickSaveInput.select();
-            }, 60);
+            // Synchronous focus & selection inside the user tap event triggers the iOS/iPadOS keyboard immediately
+            quickSaveInput.focus({ preventScroll: true });
+            quickSaveInput.setSelectionRange(0, quickSaveInput.value.length);
         });
 
         function closeQuickSaveModal() {
+            quickSaveInput.blur();
             modalQuickSave.classList.add('hidden');
         }
 
