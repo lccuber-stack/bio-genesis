@@ -271,14 +271,14 @@
             <button data-tool="draw" class="tool-btn active bg-blue-600 text-white p-2.5 rounded-xl transition active:scale-90" title="Draw Cells (Pencil)">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
             </button>
-            <button data-tool="erase" class="tool-btn text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 p-2.5 rounded-xl transition active:scale-90" title="Eraser">
+            <button data-tool="erase" class="tool-btn text-slate-600 dark:text-slate-300 p-2.5 rounded-xl transition active:scale-90" title="Eraser">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10m-7.5-3.5l-4.8-4.8a2 2 0 010-2.83l8.48-8.48a2 2 0 012.83 0l4.8 4.8a2 2 0 010 2.83L12.33 17.5a2 2 0 01-2.83 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.5 8.5l7 7"/></svg>
             </button>
-            <button data-tool="catalyst" class="tool-btn text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 p-2.5 rounded-xl transition active:scale-90" title="Quantum Catalyst (Immortal Energy Node)">
-                <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            <button data-tool="catalyst" class="tool-btn text-amber-500 p-2.5 rounded-xl transition active:scale-90" title="Quantum Catalyst (Immortal Energy Node)">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
             </button>
             <div class="h-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
-            <button data-tool="pan" class="tool-btn text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 p-2.5 rounded-xl transition active:scale-90" title="Pan & Move View">
+            <button data-tool="pan" class="tool-btn text-slate-600 dark:text-slate-300 p-2.5 rounded-xl transition active:scale-90" title="Pan & Move View">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
             </button>
             <div class="h-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
@@ -1856,15 +1856,27 @@
         document.getElementById('btn-step-back').addEventListener('click', stepBackward);
 
         // Verktygsväljare
+        function selectTool(toolName) {
+            currentTool = toolName;
+            document.querySelectorAll('.tool-btn').forEach(b => {
+                const isSelected = b.dataset.tool === toolName;
+                if (isSelected) {
+                    b.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-600/30');
+                    b.classList.remove('text-slate-600', 'dark:text-slate-300', 'text-amber-500');
+                } else {
+                    b.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-600/30');
+                    if (b.dataset.tool === 'catalyst') {
+                        b.classList.add('text-amber-500');
+                    } else {
+                        b.classList.add('text-slate-600', 'dark:text-slate-300');
+                    }
+                }
+            });
+        }
+
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.tool-btn').forEach(b => {
-                    b.classList.remove('active', 'bg-blue-600', 'text-white');
-                    b.classList.add('text-slate-600', 'dark:text-slate-300');
-                });
-                btn.classList.add('active', 'bg-blue-600', 'text-white');
-                btn.classList.remove('text-slate-600', 'dark:text-slate-300');
-                currentTool = btn.dataset.tool;
+                selectTool(btn.dataset.tool);
 
                 const names = {
                     draw: 'Pencil: Draw cells',
