@@ -42,6 +42,7 @@
             padding: 0;
             width: 100%;
             height: 100%;
+            height: 100dvh;
             overflow: hidden;
             touch-action: none; /* Förhindrar iOS Safari bounce och zoom */
         }
@@ -51,14 +52,17 @@
             height: 100%;
             touch-action: none;
         }
-        /* Snygga glasmorfism-effekter med hög skärpa på iOS */
-        .glass {
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+        /* Skarpa ytor på iOS utan dimmig backdrop-blur-halo */
+        .hud-surface {
+            box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45);
         }
-        /* Säkerställ att topp-HUD alltid har ren marginal under iPhone-statusraden */
+        /* Flytta ned topp-HUD rejält under statusfältet / Dynamic Island (+28px) */
         .safe-top-hud {
-            padding-top: calc(env(safe-area-inset-top, 12px) + 8px);
+            padding-top: calc(env(safe-area-inset-top, 20px) + 28px);
+        }
+        /* Tight och naturlig nederkant på iPhone utan överdrivet tomrum */
+        .safe-bottom-dock {
+            padding-bottom: max(env(safe-area-inset-bottom, 0px), 10px);
         }
         /* Anpassad scrollbar för mönster-modalen */
         ::-webkit-scrollbar {
@@ -87,14 +91,14 @@
 <body class="bg-slate-50 dark:bg-obsidian text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-300">
 
     <!-- Topp-HUD: Status, Generation, Population & Snabbinställningar -->
-    <header class="fixed top-0 left-0 right-0 z-20 safe-top-hud px-2.5 sm:px-4 pb-2 pointer-events-none">
+    <header class="fixed top-0 left-0 right-0 z-20 safe-top-hud px-3 sm:px-4 pb-2 pointer-events-none">
         <div class="max-w-5xl mx-auto flex items-center justify-between gap-1.5 sm:gap-2">
             
-            <!-- Status & Mätare (Kompakt på iPhone så inget klipps) -->
-            <div class="pointer-events-auto glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-2xl px-2.5 sm:px-3.5 py-2 shadow-lg flex items-center gap-2 sm:gap-4 shrink min-w-0">
+            <!-- Status & Mätare (Helt skarp och kompakt på iPhone) -->
+            <div class="pointer-events-auto hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-2xl px-3 sm:px-3.5 py-2 flex items-center gap-2 sm:gap-4 shrink min-w-0">
                 <div class="flex items-center gap-1.5 shrink-0">
                     <span id="status-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
-                    <span id="status-text" class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100">Paused</span>
+                    <span id="status-text" class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Paused</span>
                 </div>
                 <div class="h-3.5 w-[1px] bg-slate-300 dark:bg-slate-700 shrink-0"></div>
                 <div class="flex items-baseline gap-1 shrink-0">
@@ -107,26 +111,25 @@
                 </div>
             </div>
 
-            <!-- Höger snabbknappar: Ljud, Tema, Hjälp -->
-            <div class="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <!-- Höger snabbknappar: Quantum, Ljud, Tema, Hjälp -->
+            <div class="pointer-events-auto flex items-center gap-1.5 shrink-0">
                 <!-- Twist-badge: Quantum Mode -->
-                <button id="btn-quantum" title="Toggle Quantum Mode (Trails & Aging)" class="glass bg-white/95 dark:bg-slate-900/95 border border-indigo-500/60 dark:border-indigo-400/60 text-indigo-600 dark:text-indigo-300 rounded-2xl p-2 sm:px-3 sm:py-2 shadow-lg text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
+                <button id="btn-quantum" title="Toggle Quantum Mode (Trails & Aging)" class="hud-surface bg-white dark:bg-[#0f172a] border border-indigo-500/70 dark:border-indigo-400/70 text-indigo-600 dark:text-indigo-300 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     <span class="hidden sm:inline" id="quantum-label">Quantum: ON</span>
                 </button>
 
-                <button id="btn-sound" title="Generative Audio" class="glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-2 sm:p-2.5 shadow-lg text-slate-700 dark:text-slate-100 active:scale-95 transition">
-                    <!-- Ljud av ikon som standard -->
+                <button id="btn-sound" title="Generative Audio" class="hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-2xl p-2 sm:p-2.5 text-slate-800 dark:text-white active:scale-95 transition">
                     <svg id="icon-sound-off" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
                     <svg id="icon-sound-on" class="w-4 h-4 hidden text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
                 </button>
 
-                <button id="btn-theme" title="Switch Theme (Light/Dark)" class="glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-2 sm:p-2.5 shadow-lg text-slate-700 dark:text-slate-100 active:scale-95 transition">
+                <button id="btn-theme" title="Switch Theme (Light/Dark)" class="hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-2xl p-2 sm:p-2.5 text-slate-800 dark:text-white active:scale-95 transition">
                     <svg id="icon-sun" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                     <svg id="icon-moon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                 </button>
 
-                <button id="btn-help" title="How to Play" class="glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-2 sm:p-2.5 shadow-lg text-slate-700 dark:text-slate-100 active:scale-95 transition">
+                <button id="btn-help" title="How to Play" class="hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-2xl p-2 sm:p-2.5 text-slate-800 dark:text-white active:scale-95 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </button>
             </div>
@@ -235,8 +238,8 @@
     <main class="relative flex-1 w-full h-full">
         <canvas id="gameCanvas"></canvas>
         
-        <!-- Flytande Verktygsväljare (Vänster/Topp på mobil) -->
-        <div class="fixed left-3 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 glass bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 p-1.5 rounded-2xl shadow-xl">
+        <!-- Flytande Verktygsväljare (Vänster sida, skarp kontrast) -->
+        <div class="fixed left-3 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 p-1.5 rounded-2xl">
             <button data-tool="draw" class="tool-btn active bg-blue-600 text-white p-2.5 rounded-xl transition active:scale-90" title="Draw Cells (Pencil)">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
             </button>
@@ -256,9 +259,9 @@
             </button>
         </div>
 
-        <!-- Zoom-kontroller (Höger sida, tydligt ovanför botten-docken) -->
-        <div class="fixed right-3 bottom-28 z-20 flex flex-col gap-1.5 glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 p-1.5 rounded-2xl shadow-lg">
-            <button id="btn-zoom-in" class="p-2 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-100 active:scale-90 transition" title="Zoom In">
+        <!-- Zoom-kontroller (Höger sida, tätt och balanserat ovanför botten-docken) -->
+        <div class="fixed right-3 bottom-24 z-20 flex flex-col gap-1.5 hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 p-1.5 rounded-2xl">
+            <button id="btn-zoom-in" class="p-2 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-800 dark:text-white active:scale-90 transition" title="Zoom In">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
             </button>
             <button id="btn-zoom-reset" class="p-1.5 text-[10px] font-mono font-bold rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-90 transition" title="Reset View">
@@ -270,19 +273,19 @@
         </div>
     </main>
 
-    <!-- Botten-Dock: Inspirerad av skärmbilden men uppgraderad -->
-    <footer class="fixed bottom-0 left-0 right-0 z-20 pb-[calc(env(safe-area-inset-bottom)+12px)] px-3 sm:px-4 pt-2 pointer-events-none">
+    <!-- Botten-Dock: Nära nederkanten utan onödigt tomrum på iPhone -->
+    <footer class="fixed bottom-0 left-0 right-0 z-20 safe-bottom-dock px-3 sm:px-4 pt-1 pointer-events-none">
         <div class="max-w-lg mx-auto flex items-center justify-between gap-2 sm:gap-3">
             
             <!-- Vänster: Mönsterbibliotek (Stor 56x56px touch-yta på iPhone/iPad) -->
-            <button id="btn-library" class="pointer-events-auto glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-105 active:scale-95 transition shrink-0" title="Pattern Library">
+            <button id="btn-library" class="pointer-events-auto hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 w-14 h-14 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-105 active:scale-95 transition shrink-0" title="Pattern Library">
                 <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
             </button>
 
             <!-- Mitten: Huvudkontroller -->
-            <div class="pointer-events-auto glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-full px-3 py-2 shadow-xl flex items-center gap-3 sm:gap-4">
+            <div class="pointer-events-auto hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-full px-3 py-2 flex items-center gap-3 sm:gap-4">
                 <!-- Stega bakåt (Historik!) -->
-                <button id="btn-step-back" class="w-11 h-11 rounded-full border border-blue-500/40 dark:border-blue-400/40 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition disabled:opacity-30" title="Step Backward in Time (Left Arrow)">
+                <button id="btn-step-back" class="w-11 h-11 rounded-full border border-blue-500/50 dark:border-blue-400/50 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition disabled:opacity-30" title="Step Backward in Time (Left Arrow)">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 </button>
 
@@ -293,13 +296,13 @@
                 </button>
 
                 <!-- Stega framåt -->
-                <button id="btn-step-forward" class="w-11 h-11 rounded-full border border-blue-500/40 dark:border-blue-400/40 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition" title="Next Generation (Right Arrow)">
+                <button id="btn-step-forward" class="w-11 h-11 rounded-full border border-blue-500/50 dark:border-blue-400/50 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-90 transition" title="Next Generation (Right Arrow)">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </button>
             </div>
 
             <!-- Höger: Fler alternativ / Inställningar (Stor 56x56px touch-yta) -->
-            <button id="btn-more" class="pointer-events-auto glass bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-slate-700 dark:text-slate-100 hover:scale-105 active:scale-95 transition shrink-0" title="Simulation Settings & Rules">
+            <button id="btn-more" class="pointer-events-auto hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 w-14 h-14 rounded-full flex items-center justify-center text-slate-800 dark:text-white hover:scale-105 active:scale-95 transition shrink-0" title="Simulation Settings & Rules">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
             </button>
 
