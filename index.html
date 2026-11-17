@@ -6,6 +6,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Bio Genesis">
+    <meta name="color-scheme" content="dark light">
+    <meta id="meta-theme-color-dark" name="theme-color" content="#090d16" media="(prefers-color-scheme: dark)">
+    <meta id="meta-theme-color-light" name="theme-color" content="#090d16" media="(prefers-color-scheme: light)">
     <meta id="meta-theme-color" name="theme-color" content="#090d16">
     <link id="app-icon-link" rel="icon" type="image/png">
     <link id="apple-touch-icon-link" rel="apple-touch-icon" sizes="180x180">
@@ -38,19 +41,36 @@
             -webkit-user-select: none;
         }
         html {
-            background-color: #f8fafc;
+            background-color: #f8fafc !important;
+            min-height: 100%;
+            min-height: 100lvh;
         }
         html.dark {
-            background-color: #090d16;
+            background-color: #090d16 !important;
         }
-        body, html {
+        body {
             margin: 0;
             padding: 0;
+            position: fixed;
+            inset: 0;
             width: 100%;
             height: 100%;
-            height: 100dvh;
+            background-color: inherit;
             overflow: hidden;
             touch-action: none; /* Förhindrar iOS Safari bounce och zoom */
+        }
+        /* Fast bakgrundslager som täcker Safari safe-areas (topp & botten) utan vita kanter */
+        #safari-backdrop {
+            position: fixed;
+            inset: -120px;
+            z-index: -1;
+            pointer-events: none;
+        }
+        main {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
         }
         canvas {
             display: block;
@@ -95,6 +115,8 @@
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-obsidian text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-300">
+    <!-- Täcker hela Safari viewport inklusive top notch och botten toolbar -->
+    <div id="safari-backdrop" class="bg-slate-50 dark:bg-[#090d16] transition-colors duration-300"></div>
 
     <!-- Topp-HUD: Status, Generation, Population & Snabbinställningar -->
     <header class="fixed top-0 left-0 right-0 z-20 safe-top-hud px-3 sm:px-4 pb-2 pointer-events-none">
@@ -646,6 +668,7 @@
         // --- RENDERING & CANVAS ---
         let canvasWidth = 0;
         let canvasHeight = 0;
+        let hasUserPanned = false;
 
         function resizeCanvas() {
             const rect = canvas.getBoundingClientRect();
@@ -656,7 +679,7 @@
             canvas.height = Math.floor(canvasHeight * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-            if (offsetX === 0 && offsetY === 0) {
+            if (!hasUserPanned) {
                 centerGrid();
             }
             render();
@@ -665,8 +688,9 @@
         function centerGrid() {
             const totalW = COLS * cellSize;
             const totalH = ROWS * cellSize;
-            offsetX = (canvasWidth - totalW) / 2;
-            offsetY = (canvasHeight - totalH) / 2;
+            offsetX = Math.round((canvasWidth - totalW) / 2);
+            offsetY = Math.round((canvasHeight - totalH) / 2);
+            hasUserPanned = false;
         }
 
         function render() {
@@ -834,6 +858,7 @@
             if (currentTool === 'pan' || e.buttons === 2 || e.buttons === 4) {
                 offsetX += e.clientX - lastPointerX;
                 offsetY += e.clientY - lastPointerY;
+                hasUserPanned = true;
                 render();
             } else {
                 applyToolAt(e.clientX, e.clientY);
@@ -897,6 +922,7 @@
                 if (currentTool === 'pan') {
                     offsetX += touch.clientX - lastPointerX;
                     offsetY += touch.clientY - lastPointerY;
+                    hasUserPanned = true;
                     render();
                 } else {
                     applyToolAt(touch.clientX, touch.clientY);
@@ -913,6 +939,7 @@
 
                 offsetX += midX - lastPointerX;
                 offsetY += midY - lastPointerY;
+                hasUserPanned = true;
 
                 const targetSize = Math.max(4, Math.min(48, initialCellSize * (dist / initialPinchDist)));
                 const factor = targetSize / cellSize;
@@ -1598,8 +1625,11 @@
             const isDark = html.classList.toggle('dark');
             const bgColor = isDark ? '#090d16' : '#f8fafc';
             html.style.backgroundColor = bgColor;
-            const metaTheme = document.getElementById('meta-theme-color');
-            if (metaTheme) metaTheme.setAttribute('content', bgColor);
+            document.body.style.backgroundColor = bgColor;
+            ['meta-theme-color', 'meta-theme-color-dark', 'meta-theme-color-light'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.setAttribute('content', bgColor);
+            });
             document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
             document.getElementById('icon-moon').classList.toggle('hidden', isDark);
         });
