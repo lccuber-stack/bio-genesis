@@ -459,7 +459,7 @@
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-opacity duration-300 glass bg-slate-900/90 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg">
+    <div id="toast" class="fixed left-1/2 -translate-x-1/2 z-40 pointer-events-none opacity-0 transition-opacity duration-300 hud-surface bg-slate-900/95 dark:bg-slate-800/95 border border-slate-700/80 text-white text-xs font-medium px-4 py-2 rounded-full whitespace-nowrap" style="top: calc(env(safe-area-inset-top, 20px) + 88px);">
         Message
     </div>
 
@@ -525,12 +525,27 @@
             return g.map(row => new Int16Array(row));
         }
 
-        function showToast(msg) {
+        let isPersistentToastActive = false;
+
+        function hideToast() {
+            const toast = document.getElementById('toast');
+            clearTimeout(toast._timer);
+            isPersistentToastActive = false;
+            toast.classList.add('opacity-0');
+        }
+
+        function showToast(msg, persistent = false) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.classList.remove('opacity-0');
             clearTimeout(toast._timer);
-            toast._timer = setTimeout(() => toast.classList.add('opacity-0'), 2200);
+            isPersistentToastActive = persistent;
+            if (!persistent) {
+                toast._timer = setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                    isPersistentToastActive = false;
+                }, 2400);
+            }
         }
 
         // --- LJUDSYNTES (WEB AUDIO API) ---
@@ -817,6 +832,9 @@
         }
 
         function applyToolAt(clientX, clientY) {
+            if (isPersistentToastActive) {
+                hideToast();
+            }
             const { row, col } = getGridCoords(clientX, clientY);
             if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
 
@@ -1804,7 +1822,9 @@
             localStorage.setItem(WELCOME_PREF_KEY, chkShowWelcome.checked ? 'true' : 'false');
             welcomeScreen.classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => welcomeScreen.classList.add('hidden'), 300);
-            showToast('Grid is ready — draw your first cells!');
+            if (population === 0) {
+                showToast('Grid is ready — draw your first cells!', true);
+            }
         }
 
         document.getElementById('btn-start-game').addEventListener('click', dismissWelcomeScreen);
