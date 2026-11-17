@@ -254,6 +254,9 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
             </button>
             <div class="h-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <button id="btn-quick-save" class="text-amber-500 hover:bg-amber-500/15 p-2.5 rounded-xl transition active:scale-90" title="Save Current Design">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </button>
             <button id="btn-quick-clear" class="text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 p-2.5 rounded-xl transition active:scale-90" title="Clear Entire Grid">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             </button>
@@ -322,13 +325,22 @@
                 </button>
             </div>
 
-            <!-- Category Filter Pills (No ugly scrollbar) -->
-            <div id="pattern-categories" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 mb-2 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
-                <button data-cat="all" class="cat-pill active px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-600 text-white whitespace-nowrap transition">All (18)</button>
-                <button data-cat="quantum" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap transition">⚛️ Quantum</button>
-                <button data-cat="guns" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap transition">🚀 Guns & Ships</button>
-                <button data-cat="oscillators" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap transition">💫 Oscillators</button>
-                <button data-cat="chaos" class="cat-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap transition">🧬 Methuselahs</button>
+            <!-- Category Filter Grid (Ingen horisontell beskärning på iPhone) -->
+            <div id="pattern-categories" class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 pb-3 mb-2 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
+                <button data-cat="all" class="cat-pill active px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-blue-600 text-white text-center truncate transition">All (18)</button>
+                <button data-cat="saved" id="tab-saved-btn" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">⭐ Saved (0)</button>
+                <button data-cat="quantum" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">⚛️ Quantum</button>
+                <button data-cat="guns" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">🚀 Guns</button>
+                <button data-cat="oscillators" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">💫 Oscillators</button>
+                <button data-cat="chaos" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">🧬 Chaos</button>
+            </div>
+
+            <!-- Save Current Grid Bar (Shown when 'My Saved' tab is active) -->
+            <div id="save-design-bar" class="hidden mb-3 p-3 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center gap-2 shrink-0">
+                <input id="save-design-name" type="text" maxlength="32" placeholder="Name your creation..." class="flex-1 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="btn-save-design" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold whitespace-nowrap active:scale-95 transition shadow-sm">
+                    + Save Grid
+                </button>
             </div>
 
             <!-- Dynamic Pattern Cards Grid with Mini Canvas Previews -->
@@ -387,6 +399,33 @@
                         Done
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Quick Save Creation Modal -->
+    <div id="modal-quick-save" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl transform transition-all">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </span>
+                    <h2 class="text-lg font-bold">Save Creation</h2>
+                </div>
+                <button id="close-quick-save" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Save your current grid layout locally so you can load it anytime from the folder menu.</p>
+            <input id="quick-save-input" type="text" maxlength="32" placeholder="e.g. Quantum Cruiser" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white mb-4 focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <div class="flex gap-2.5">
+                <button id="cancel-quick-save" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm transition">
+                    Cancel
+                </button>
+                <button id="confirm-quick-save" class="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/25 transition active:scale-95">
+                    Save Design
+                </button>
             </div>
         </div>
     </div>
@@ -1189,10 +1228,208 @@
             return c;
         }
 
+        // --- LOCAL STORAGE SAVED DESIGNS ---
+        const SAVED_DESIGNS_KEY = 'biogenesis_saved_designs_v1';
+        let activeGalleryCategory = 'all';
+
+        function getSavedDesigns() {
+            try {
+                const raw = localStorage.getItem(SAVED_DESIGNS_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function setSavedDesigns(list) {
+            try {
+                localStorage.setItem(SAVED_DESIGNS_KEY, JSON.stringify(list));
+            } catch (e) {
+                showToast('Storage full — delete old designs first');
+            }
+            updateSavedTabCount();
+        }
+
+        function updateSavedTabCount() {
+            const count = getSavedDesigns().length;
+            const tabBtn = document.getElementById('tab-saved-btn');
+            if (tabBtn) tabBtn.textContent = `⭐ Saved (${count})`;
+        }
+
+        function setActiveCategoryPill(cat) {
+            document.querySelectorAll('.cat-pill').forEach(p => {
+                if (p.dataset.cat === cat) {
+                    p.classList.add('active', 'bg-blue-600', 'text-white');
+                    p.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                } else {
+                    p.classList.remove('active', 'bg-blue-600', 'text-white');
+                    p.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                }
+            });
+        }
+
+        function saveCurrentBoardDesign(overrideName, stayInSavedTab = false) {
+            const cells = [];
+            const catalysts = [];
+            let minR = ROWS, maxR = -1, minC = COLS, maxC = -1;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c] !== 0) {
+                        if (r < minR) minR = r;
+                        if (r > maxR) maxR = r;
+                        if (c < minC) minC = c;
+                        if (c > maxC) maxC = c;
+                    }
+                }
+            }
+
+            if (maxR === -1) {
+                showToast('Draw something on the grid first!');
+                return false;
+            }
+
+            // Centrera koordinaterna kring mönstrets mittpunkt så det laddas perfekt i mitten senare
+            const midR = Math.floor((minR + maxR) / 2);
+            const midC = Math.floor((minC + maxC) / 2);
+
+            for (let r = minR; r <= maxR; r++) {
+                for (let c = minC; c <= maxC; c++) {
+                    if (grid[r][c] > 0) {
+                        cells.push([r - midR, c - midC]);
+                    } else if (grid[r][c] === -1) {
+                        catalysts.push([r - midR, c - midC]);
+                    }
+                }
+            }
+
+            const inputEl = document.getElementById('save-design-name');
+            const savedList = getSavedDesigns();
+            const rawName = typeof overrideName === 'string' ? overrideName : inputEl.value;
+            const customName = rawName.trim() || `Creation #${savedList.length + 1}`;
+            const dateStr = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+            const newDesign = {
+                id: 'saved_' + Date.now(),
+                name: customName,
+                icon: '⭐',
+                category: 'saved',
+                accent: 'cyan',
+                desc: `${cells.length + catalysts.length} cells • Saved ${dateStr}`,
+                cells,
+                catalysts
+            };
+
+            savedList.unshift(newDesign);
+            setSavedDesigns(savedList);
+            inputEl.value = '';
+            if (stayInSavedTab) {
+                setActiveCategoryPill('saved');
+                buildPatternGallery('saved');
+            }
+            showToast(`⭐ Saved "${customName}"`);
+            return true;
+        }
+
+        function deleteSavedDesign(id, e) {
+            e.stopPropagation();
+            const updated = getSavedDesigns().filter(item => item.id !== id);
+            setSavedDesigns(updated);
+            buildPatternGallery('saved');
+            showToast('Design deleted');
+        }
+
+        function loadSavedDesign(design) {
+            togglePlay(false);
+            grid = createEmptyGrid();
+            trailGrid = Array.from({ length: ROWS }, () => new Float32Array(COLS));
+            historyStack = [];
+            generation = 0;
+
+            const centerR = Math.floor(ROWS / 2);
+            const centerC = Math.floor(COLS / 2);
+
+            (design.cells || []).forEach(([dr, dc]) => {
+                const r = centerR + dr;
+                const c = centerC + dc;
+                if (r >= 0 && r < ROWS && c >= 0 && c < COLS) grid[r][c] = 1;
+            });
+            (design.catalysts || []).forEach(([dr, dc]) => {
+                const r = centerR + dr;
+                const c = centerC + dc;
+                if (r >= 0 && r < ROWS && c >= 0 && c < COLS) grid[r][c] = -1;
+            });
+
+            recalculatePopulation();
+            updateHUD();
+            centerGrid();
+            render();
+        }
+
         function buildPatternGallery(filterCategory = 'all') {
+            activeGalleryCategory = filterCategory;
             const container = document.getElementById('pattern-grid');
+            const saveBar = document.getElementById('save-design-bar');
             container.innerHTML = '';
 
+            if (filterCategory === 'saved') {
+                saveBar.classList.remove('hidden');
+                const savedList = getSavedDesigns();
+
+                if (savedList.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full py-10 px-4 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+                            <div class="text-2xl mb-1.5">✨</div>
+                            <div class="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">No saved creations yet</div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Draw on the grid, enter a name above, and tap <strong>+ Save Grid</strong> to keep it on this device.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                savedList.forEach(design => {
+                    const card = document.createElement('div');
+                    card.className = 'pattern-card group text-left p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-slate-800/80 transition flex items-center gap-3 cursor-pointer active:scale-[0.98]';
+
+                    const thumbWrap = document.createElement('div');
+                    thumbWrap.className = 'w-16 h-16 rounded-xl overflow-hidden border border-slate-300/60 dark:border-slate-700/80 shrink-0 shadow-inner bg-[#070b14]';
+                    const thumbCanvas = renderPatternThumbnail(design);
+                    thumbCanvas.className = 'w-full h-full object-cover';
+                    thumbWrap.appendChild(thumbCanvas);
+
+                    const info = document.createElement('div');
+                    info.className = 'min-w-0 flex-1';
+                    info.innerHTML = `
+                        <div class="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate mb-0.5">
+                            ${design.name}
+                        </div>
+                        <p class="text-[11px] leading-snug text-slate-600 dark:text-slate-400 truncate">
+                            ${design.desc}
+                        </p>
+                    `;
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition shrink-0';
+                    delBtn.title = 'Delete Saved Design';
+                    delBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>`;
+                    delBtn.addEventListener('click', (e) => deleteSavedDesign(design.id, e));
+
+                    card.appendChild(thumbWrap);
+                    card.appendChild(info);
+                    card.appendChild(delBtn);
+
+                    card.addEventListener('click', () => {
+                        loadSavedDesign(design);
+                        modalLib.classList.add('hidden');
+                        showToast(`Loaded: ${design.name}`);
+                    });
+
+                    container.appendChild(card);
+                });
+                return;
+            }
+
+            saveBar.classList.add('hidden');
             const filtered = filterCategory === 'all'
                 ? PATTERN_CATALOG
                 : PATTERN_CATALOG.filter(p => p.category === filterCategory);
@@ -1361,8 +1598,59 @@
         const modalLib = document.getElementById('modal-library');
         const modalMore = document.getElementById('modal-more');
 
-        document.getElementById('btn-library').addEventListener('click', () => modalLib.classList.remove('hidden'));
+        document.getElementById('btn-library').addEventListener('click', () => {
+            updateSavedTabCount();
+            setActiveCategoryPill('all');
+            buildPatternGallery('all');
+            modalLib.classList.remove('hidden');
+        });
         document.getElementById('btn-more').addEventListener('click', () => modalMore.classList.remove('hidden'));
+
+        // Snabbspara via Stjärnknappen på spelbrädet
+        const modalQuickSave = document.getElementById('modal-quick-save');
+        const quickSaveInput = document.getElementById('quick-save-input');
+
+        document.getElementById('btn-quick-save').addEventListener('click', () => {
+            if (population === 0) {
+                showToast('Draw something on the grid first!');
+                return;
+            }
+            if (isRunning) togglePlay(false);
+            quickSaveInput.value = `Creation #${getSavedDesigns().length + 1}`;
+            modalQuickSave.classList.remove('hidden');
+            setTimeout(() => {
+                quickSaveInput.focus();
+                quickSaveInput.select();
+            }, 60);
+        });
+
+        function closeQuickSaveModal() {
+            modalQuickSave.classList.add('hidden');
+        }
+
+        document.getElementById('close-quick-save').addEventListener('click', closeQuickSaveModal);
+        document.getElementById('cancel-quick-save').addEventListener('click', closeQuickSaveModal);
+        document.getElementById('confirm-quick-save').addEventListener('click', () => {
+            if (saveCurrentBoardDesign(quickSaveInput.value, false)) {
+                closeQuickSaveModal();
+            }
+        });
+        quickSaveInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (saveCurrentBoardDesign(quickSaveInput.value, false)) {
+                    closeQuickSaveModal();
+                }
+            }
+        });
+
+        document.getElementById('btn-save-design').addEventListener('click', () => saveCurrentBoardDesign(undefined, true));
+        document.getElementById('save-design-name').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveCurrentBoardDesign(undefined, true);
+            }
+        });
 
         document.querySelectorAll('.close-modal').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1374,12 +1662,7 @@
         // Kategori-flikar i mönsterbiblioteket
         document.querySelectorAll('.cat-pill').forEach(pill => {
             pill.addEventListener('click', () => {
-                document.querySelectorAll('.cat-pill').forEach(p => {
-                    p.classList.remove('active', 'bg-blue-600', 'text-white');
-                    p.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
-                });
-                pill.classList.add('active', 'bg-blue-600', 'text-white');
-                pill.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                setActiveCategoryPill(pill.dataset.cat);
                 buildPatternGallery(pill.dataset.cat);
             });
         });
@@ -1496,6 +1779,7 @@
         window.addEventListener('resize', resizeCanvas);
         window.onload = () => {
             generateHomeScreenIcon();
+            updateSavedTabCount();
             buildPatternGallery('all');
             resizeCanvas();
             // Starta med helt tom spelplan
