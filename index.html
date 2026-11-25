@@ -45,6 +45,7 @@
         input, select {
             user-select: text;
             -webkit-user-select: text;
+            font-size: 16px; /* Förhindrar iOS Safari auto-zoom vid fokus i textfält */
         }
         html {
             background-color: #f8fafc !important;
@@ -386,7 +387,7 @@
 
             <!-- Save Current Grid Bar (Shown when 'My Saved' tab is active) -->
             <div id="save-design-bar" class="hidden mb-3 p-3 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center gap-2 shrink-0">
-                <input id="save-design-name" type="text" maxlength="32" placeholder="Name your creation..." class="flex-1 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input id="save-design-name" type="text" maxlength="32" enterkeyhint="done" placeholder="Name your creation..." class="flex-1 min-w-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-base sm:text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <button id="btn-save-design" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold whitespace-nowrap active:scale-95 transition shadow-sm">
                     + Save Grid
                 </button>
@@ -422,7 +423,7 @@
                 <!-- Rulesets -->
                 <div>
                     <label class="block text-sm font-medium mb-2">Universe Physics Rules</label>
-                    <select id="rule-select" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="rule-select" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-base sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="B3/S23">Classic Conway (B3/S23)</option>
                         <option value="B36/S23">HighLife - Replicators (B36/S23)</option>
                         <option value="B2/S">Seeds - Explosive Growth (B2/S)</option>
@@ -487,13 +488,40 @@
                 </button>
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Save your current grid layout locally so you can load it anytime from the folder menu.</p>
-            <input id="quick-save-input" type="text" maxlength="32" enterkeyhint="done" placeholder="e.g. Quantum Cruiser" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white mb-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <input id="quick-save-input" type="text" maxlength="32" enterkeyhint="done" placeholder="e.g. Quantum Cruiser" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-base sm:text-sm font-medium text-slate-900 dark:text-white mb-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500">
             <div class="flex gap-2.5">
                 <button id="cancel-quick-save" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm transition">
                     Cancel
                 </button>
                 <button id="confirm-quick-save" class="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/25 transition active:scale-95">
                     Save Design
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Rename Saved Design Modal (Top-aligned so iOS keyboard never covers it) -->
+    <div id="modal-rename-design" class="fixed inset-0 z-[55] bg-black/65 backdrop-blur-sm hidden flex items-start sm:items-center justify-center pt-[calc(env(safe-area-inset-top,20px)+76px)] sm:pt-4 px-4 pb-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-4 sm:p-5 shadow-2xl transform transition-all">
+            <div class="flex items-center justify-between mb-2.5">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    </span>
+                    <h2 class="text-lg font-bold">Rename Design</h2>
+                </div>
+                <button id="close-rename-modal" class="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Enter a new name for your saved creation.</p>
+            <input id="rename-design-input" type="text" maxlength="32" enterkeyhint="done" placeholder="Creation name..." class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-base sm:text-sm font-medium text-slate-900 dark:text-white mb-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <div class="flex gap-2.5">
+                <button id="cancel-rename-modal" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm transition">
+                    Cancel
+                </button>
+                <button id="confirm-rename-modal" class="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/25 transition active:scale-95">
+                    Save Name
                 </button>
             </div>
         </div>
@@ -2224,38 +2252,7 @@
                     editBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`;
                     editBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        info.innerHTML = '';
-                        const renameInput = document.createElement('input');
-                        renameInput.type = 'text';
-                        renameInput.maxLength = 32;
-                        renameInput.value = item.name;
-                        renameInput.className = 'w-full bg-white dark:bg-slate-900 border border-amber-500 rounded-lg px-2 py-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none';
-                        renameInput.addEventListener('click', (ev) => ev.stopPropagation());
-
-                        const commitRename = () => {
-                            const nextName = renameInput.value.trim();
-                            if (nextName && nextName !== item.name) {
-                                const list = getSavedDesigns().map(d => d.id === item.id ? { ...d, name: nextName } : d);
-                                setSavedDesigns(list);
-                                showToast(`Renamed to "${nextName}"`);
-                            }
-                            renderPatternCards();
-                        };
-
-                        renameInput.addEventListener('keydown', (ev) => {
-                            if (ev.key === 'Enter') {
-                                ev.preventDefault();
-                                commitRename();
-                            } else if (ev.key === 'Escape') {
-                                ev.preventDefault();
-                                renderPatternCards();
-                            }
-                        });
-                        renameInput.addEventListener('blur', commitRename);
-
-                        info.appendChild(renameInput);
-                        renameInput.focus();
-                        renameInput.select();
+                        openRenameDesignModal(item);
                     });
 
                     const shareBtn = document.createElement('button');
@@ -2476,7 +2473,56 @@
             if (e.key === 'Enter') {
                 e.preventDefault();
                 confirmQuickSaveDesign();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeQuickSaveModal();
             }
+        });
+
+        // Rename Saved Design Modal (Top-positioned for iOS Safari keyboard safety)
+        const modalRenameDesign = document.getElementById('modal-rename-design');
+        const renameDesignInput = document.getElementById('rename-design-input');
+        let renamingDesignId = null;
+
+        function openRenameDesignModal(designItem) {
+            renamingDesignId = designItem.id;
+            renameDesignInput.value = designItem.name;
+            modalRenameDesign.classList.remove('hidden');
+            renameDesignInput.focus();
+            renameDesignInput.select();
+        }
+
+        function closeRenameDesignModal() {
+            modalRenameDesign.classList.add('hidden');
+            renameDesignInput.blur();
+            renamingDesignId = null;
+        }
+
+        function confirmRenameDesign() {
+            const nextName = renameDesignInput.value.trim();
+            if (renamingDesignId && nextName) {
+                const list = getSavedDesigns().map(d => d.id === renamingDesignId ? { ...d, name: nextName } : d);
+                setSavedDesigns(list);
+                renderPatternCards();
+                showToast(`Renamed to "${nextName}"`);
+            }
+            closeRenameDesignModal();
+        }
+
+        document.getElementById('close-rename-modal').addEventListener('click', closeRenameDesignModal);
+        document.getElementById('cancel-rename-modal').addEventListener('click', closeRenameDesignModal);
+        document.getElementById('confirm-rename-modal').addEventListener('click', confirmRenameDesign);
+        renameDesignInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmRenameDesign();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeRenameDesignModal();
+            }
+        });
+        modalRenameDesign.addEventListener('click', (e) => {
+            if (e.target === modalRenameDesign) closeRenameDesignModal();
         });
 
         // Quick Share Current Grid
@@ -2501,8 +2547,16 @@
             list.unshift(design);
             setSavedDesigns(list);
             nameInput.value = '';
+            nameInput.blur();
             renderPatternCards();
             showToast(`⭐ Saved "${design.name}"!`);
+        });
+
+        document.getElementById('save-design-name').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('btn-save-design').click();
+            }
         });
 
         function selectLibraryCategory(cat) {
