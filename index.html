@@ -110,6 +110,23 @@
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
+        /* Tillåt naturlig vertikal scroll inuti modal-listor på iOS */
+        .modal-scroll-area {
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+        /* Garantera att miniatyr-canvas inuti kort inte sträcks ut av global "canvas { width: 100%; height: 100%; }" */
+        canvas.pattern-mini-canvas {
+            width: 64px !important;
+            height: 64px !important;
+            min-width: 64px;
+            min-height: 64px;
+            flex-shrink: 0;
+            display: block;
+        }
         /* Puls-animation för aktiv körning */
         @keyframes pulse-ring {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
@@ -226,7 +243,7 @@
             </div>
 
             <h1 class="text-2xl font-bold tracking-tight mb-1">Bio Genesis</h1>
-            <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">Quantum Game of Life <span class="app-version-badge font-mono opacity-80">v1.4.0</span></p>
+            <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">Quantum Game of Life <span class="app-version-badge font-mono opacity-80">v1.7.0</span></p>
             
             <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-5">
                 Create digital life on an infinite grid. Every cell lives, ages, or dies based on its neighbors—watch simple patterns evolve into living organisms.
@@ -361,9 +378,9 @@
         </div>
     </footer>
 
-    <!-- MODAL 1: Pattern Library -->
-    <div id="modal-library" class="fixed inset-0 z-50 bg-black/65 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-2xl rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl transform transition-all max-h-[88vh] flex flex-col">
+    <!-- MODAL 1: Pattern Library (Top/Center-anchored so UI never sinks to bottom on iPhone) -->
+    <div id="modal-library" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md hidden flex items-start sm:items-center justify-center pt-[calc(env(safe-area-inset-top,20px)+16px)] sm:pt-4 px-3 sm:px-4 pb-[max(env(safe-area-inset-bottom,12px),12px)]">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-2xl rounded-3xl p-4 sm:p-6 shadow-2xl transform transition-all max-h-[84dvh] flex flex-col">
             <div class="flex items-center justify-between mb-3 shrink-0">
                 <div>
                     <h2 class="text-xl font-bold tracking-tight">Patterns & Organisms</h2>
@@ -394,15 +411,15 @@
             </div>
 
             <!-- Dynamic Pattern Cards Grid with Mini Canvas Previews -->
-            <div id="pattern-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto no-scrollbar pb-3">
+            <div id="pattern-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 min-h-0 modal-scroll-area no-scrollbar pb-2 items-start content-start">
                 <!-- Populated dynamically with live visual mini-grids -->
             </div>
         </div>
     </div>
 
-    <!-- MODAL 2: Settings & Rules -->
-    <div id="modal-more" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform transition-all">
+    <!-- MODAL 2: Settings & Rules (Consistent top/center positioning on iPhone) -->
+    <div id="modal-more" class="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm hidden flex items-start sm:items-center justify-center pt-[calc(env(safe-area-inset-top,20px)+16px)] sm:pt-4 px-3 sm:px-4 pb-[max(env(safe-area-inset-bottom,12px),12px)]">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl transform transition-all max-h-[86dvh] modal-scroll-area no-scrollbar">
             <div class="flex items-center justify-between mb-5">
                 <h2 class="text-xl font-bold">Simulation Controls</h2>
                 <button class="close-modal p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white">
@@ -446,7 +463,7 @@
                         <div>
                             <div class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">App Version &amp; Sync</div>
                             <div class="flex items-center gap-2 mt-0.5">
-                                <span id="current-version-label" class="font-mono text-sm font-bold text-slate-900 dark:text-white">v1.4.0</span>
+                                <span id="current-version-label" class="font-mono text-sm font-bold text-slate-900 dark:text-white">v1.7.0</span>
                                 <span id="version-status-pill" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Up to date</span>
                             </div>
                         </div>
@@ -474,7 +491,7 @@
     </div>
 
     <!-- MODAL 3: Quick Save Creation Modal -->
-    <div id="modal-quick-save" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-start sm:items-center justify-center pt-[calc(env(safe-area-inset-top,20px)+76px)] sm:pt-4 px-4 pb-4">
+    <div id="modal-quick-save" class="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm hidden flex items-start sm:items-center justify-center pt-[calc(env(safe-area-inset-top,20px)+24px)] sm:pt-4 px-4 pb-4">
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-4 sm:p-5 shadow-2xl transform transition-all">
             <div class="flex items-center justify-between mb-2.5">
                 <div class="flex items-center gap-2">
@@ -501,7 +518,7 @@
     </div>
 
     <!-- MODAL 4: Rename Saved Design Modal (Top-aligned so iOS keyboard never covers it) -->
-    <div id="modal-rename-design" class="fixed inset-0 z-[55] bg-black/65 backdrop-blur-sm hidden flex items-start sm:items-center justify-center pt-[calc(env(safe-area-inset-top,20px)+76px)] sm:pt-4 px-4 pb-4">
+    <div id="modal-rename-design" class="fixed inset-0 z-[55] bg-black/70 backdrop-blur-sm hidden flex items-start sm:items-center justify-center pt-[calc(env(safe-area-inset-top,20px)+24px)] sm:pt-4 px-4 pb-4">
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-4 sm:p-5 shadow-2xl transform transition-all">
             <div class="flex items-center justify-between mb-2.5">
                 <div class="flex items-center gap-2">
@@ -566,7 +583,7 @@
          */
 
         // --- APP VERSIONING & GITHUB LIVE SYNC (PRESERVES ALL SAVED DESIGNS) ---
-        const APP_VERSION = '1.4.0';
+        const APP_VERSION = '1.7.0';
         const VERSION_CHECK_KEY = 'biogenesis_last_known_version_v1';
         let latestRemoteVersion = APP_VERSION;
         let isCheckingUpdate = false;
@@ -2163,51 +2180,69 @@
 
         // --- PATTERN LIBRARY RENDERER ---
         function drawMiniPreview(previewCanvas, item) {
+            if (!previewCanvas) return;
             const pCtx = previewCanvas.getContext('2d');
+            if (!pCtx) return;
             const w = previewCanvas.width;
             const h = previewCanvas.height;
             const isDark = document.documentElement.classList.contains('dark');
 
+            pCtx.clearRect(0, 0, w, h);
             pCtx.fillStyle = isDark ? '#090d16' : '#f1f5f9';
             pCtx.fillRect(0, 0, w, h);
 
-            const allPts = [...(item.cells || []), ...(item.catalysts || [])];
+            const cells = Array.isArray(item.cells) ? item.cells : [];
+            const catalysts = Array.isArray(item.catalysts) ? item.catalysts : [];
+            const allPts = [...cells, ...catalysts];
             if (allPts.length === 0) return;
 
-            let maxR = 0, maxC = 0;
+            let minR = Infinity, minC = Infinity, maxR = -Infinity, maxC = -Infinity;
             allPts.forEach(([r, c]) => {
+                if (r < minR) minR = r;
+                if (c < minC) minC = c;
                 if (r > maxR) maxR = r;
                 if (c > maxC) maxC = c;
             });
 
-            const spanR = maxR + 1;
-            const spanC = maxC + 1;
-            const scale = Math.min((w - 16) / spanC, (h - 16) / spanR, 10);
+            const spanR = Math.max(1, maxR - minR + 1);
+            const spanC = Math.max(1, maxC - minC + 1);
+            const scale = Math.min((w - 16) / spanC, (h - 16) / spanR, 12);
             const ox = (w - spanC * scale) / 2;
             const oy = (h - spanR * scale) / 2;
 
             pCtx.fillStyle = isDark ? '#38bdf8' : '#2563eb';
-            (item.cells || []).forEach(([r, c]) => {
-                pCtx.fillRect(ox + c * scale, oy + r * scale, Math.max(1.5, scale - 1), Math.max(1.5, scale - 1));
+            cells.forEach(([r, c]) => {
+                pCtx.fillRect(
+                    ox + (c - minC) * scale,
+                    oy + (r - minR) * scale,
+                    Math.max(2, scale - 1),
+                    Math.max(2, scale - 1)
+                );
             });
 
             pCtx.fillStyle = '#f59e0b';
-            (item.catalysts || []).forEach(([r, c]) => {
-                pCtx.fillRect(ox + c * scale, oy + r * scale, Math.max(2, scale - 1), Math.max(2, scale - 1));
+            catalysts.forEach(([r, c]) => {
+                pCtx.fillRect(
+                    ox + (c - minC) * scale,
+                    oy + (r - minR) * scale,
+                    Math.max(2.5, scale - 1),
+                    Math.max(2.5, scale - 1)
+                );
             });
         }
 
         function renderPatternCards() {
             const container = document.getElementById('pattern-grid');
             const saveBar = document.getElementById('save-design-bar');
+            if (!container) return;
             container.innerHTML = '';
 
             let items = [];
             if (currentCategory === 'saved') {
-                saveBar.classList.remove('hidden');
+                if (saveBar) saveBar.classList.remove('hidden');
                 items = getSavedDesigns();
             } else {
-                saveBar.classList.add('hidden');
+                if (saveBar) saveBar.classList.add('hidden');
                 items = currentCategory === 'all'
                     ? PATTERN_CATALOG
                     : PATTERN_CATALOG.filter(p => p.cat === currentCategory);
@@ -2224,30 +2259,38 @@
 
             items.forEach((item) => {
                 const card = document.createElement('div');
-                card.className = 'group bg-slate-50 dark:bg-slate-800/70 hover:bg-blue-500/10 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition active:scale-[0.99]';
+                card.className = 'group relative w-full bg-slate-50 dark:bg-slate-800/85 hover:bg-blue-500/10 border border-slate-200 dark:border-slate-700/90 rounded-2xl p-3 flex items-center gap-3 min-h-[88px] cursor-pointer transition active:scale-[0.99]';
 
                 const miniCanvas = document.createElement('canvas');
                 miniCanvas.width = 72;
                 miniCanvas.height = 72;
-                miniCanvas.className = 'w-16 h-16 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0';
+                miniCanvas.className = 'pattern-mini-canvas w-16 h-16 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 block';
                 drawMiniPreview(miniCanvas, item);
 
                 const info = document.createElement('div');
                 info.className = 'flex-1 min-w-0';
-                info.innerHTML = `
-                    <div class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate group-hover:text-blue-500 transition">${item.name}</div>
-                    <div class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug">${item.desc}</div>
-                `;
+                const titleEl = document.createElement('div');
+                titleEl.className = 'font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate group-hover:text-blue-500 transition';
+                titleEl.textContent = item.name || 'Saved Creation';
+
+                const cellCount = (Array.isArray(item.cells) ? item.cells.length : 0) + (Array.isArray(item.catalysts) ? item.catalysts.length : 0);
+                const descEl = document.createElement('div');
+                descEl.className = 'text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug';
+                descEl.textContent = item.desc || `${cellCount} cells • Saved locally`;
+
+                info.appendChild(titleEl);
+                info.appendChild(descEl);
 
                 card.appendChild(miniCanvas);
                 card.appendChild(info);
 
                 if (currentCategory === 'saved') {
                     const actions = document.createElement('div');
-                    actions.className = 'flex items-center gap-1 shrink-0';
+                    actions.className = 'flex items-center gap-1 shrink-0 z-10';
 
                     const editBtn = document.createElement('button');
-                    editBtn.className = 'p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 transition';
+                    editBtn.type = 'button';
+                    editBtn.className = 'p-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 transition';
                     editBtn.title = 'Rename Design';
                     editBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`;
                     editBtn.addEventListener('click', (e) => {
@@ -2256,7 +2299,8 @@
                     });
 
                     const shareBtn = document.createElement('button');
-                    shareBtn.className = 'p-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 transition';
+                    shareBtn.type = 'button';
+                    shareBtn.className = 'p-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-500 transition';
                     shareBtn.title = 'Share Design';
                     shareBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>`;
                     shareBtn.addEventListener('click', (e) => {
@@ -2265,7 +2309,8 @@
                     });
 
                     const delBtn = document.createElement('button');
-                    delBtn.className = 'p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition';
+                    delBtn.type = 'button';
+                    delBtn.className = 'p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 transition';
                     delBtn.title = 'Delete Design';
                     delBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>`;
                     delBtn.addEventListener('click', (e) => {
@@ -2450,6 +2495,7 @@
         function closeQuickSaveModal() {
             modalQuickSave.classList.add('hidden');
             quickSaveInput.blur();
+            resetIosViewportScroll();
         }
 
         function confirmQuickSaveDesign() {
@@ -2496,6 +2542,7 @@
             modalRenameDesign.classList.add('hidden');
             renameDesignInput.blur();
             renamingDesignId = null;
+            resetIosViewportScroll();
         }
 
         function confirmRenameDesign() {
@@ -2593,29 +2640,46 @@
             });
         });
 
-        // More Settings Modal
+        // More Settings Modal & GitHub Update Button
         document.getElementById('btn-more').addEventListener('click', () => {
-            updateVersionBadgesUI(latestRemoteVersion);
             document.getElementById('modal-more').classList.remove('hidden');
         });
 
-        // Manual GitHub Update Button
         document.getElementById('btn-check-update').addEventListener('click', () => {
             syncWithGitHub(true);
         });
 
+        function closeAllModals() {
+            document.getElementById('modal-library').classList.add('hidden');
+            document.getElementById('modal-more').classList.add('hidden');
+            closeQuickSaveModal();
+            closeRenameDesignModal();
+            resetIosViewportScroll();
+        }
+
+        // Återställ iOS Safari scroll-förskjutning när tangentbord eller modal stängs
+        function resetIosViewportScroll() {
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+                resizeCanvas();
+            }, 60);
+        }
+
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('blur', resetIosViewportScroll);
+        });
+
         document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.getElementById('modal-library').classList.add('hidden');
-                document.getElementById('modal-more').classList.add('hidden');
-            });
+            btn.addEventListener('click', closeAllModals);
         });
 
         // Close modals when tapping outside the card on backdrop
         ['modal-library', 'modal-more'].forEach(modalId => {
             const modalEl = document.getElementById(modalId);
             modalEl.addEventListener('click', (e) => {
-                if (e.target === modalEl) modalEl.classList.add('hidden');
+                if (e.target === modalEl) closeAllModals();
             });
         });
         modalQuickSave.addEventListener('click', (e) => {
@@ -2643,6 +2707,10 @@
 
         // Keyboard Shortcuts (Desktop)
         window.addEventListener('keydown', (e) => {
+            if (e.code === 'Escape') {
+                closeAllModals();
+                return;
+            }
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
             if (e.code === 'Space') {
                 e.preventDefault();
