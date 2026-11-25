@@ -41,6 +41,11 @@
             user-select: none;
             -webkit-user-select: none;
         }
+        /* Tillåt markering i textfält */
+        input, select {
+            user-select: text;
+            -webkit-user-select: text;
+        }
         html {
             background-color: #f8fafc !important;
             min-height: 100%;
@@ -142,7 +147,7 @@
 
             <!-- Höger snabbknappar: Quantum, Ljud, Tema, Hjälp -->
             <div class="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
-                <!-- Twist-badge: Quantum Mode (Tydlig visuell skillnad på både iPhone-ikon och Desktop-badge) -->
+                <!-- Twist-badge: Quantum Mode -->
                 <button id="btn-quantum" title="Toggle Quantum Mode (Trails & Aging)" class="hud-surface bg-indigo-600 border border-indigo-400 text-white shadow-md shadow-indigo-500/35 rounded-2xl p-2 sm:px-3 sm:py-2 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition">
                     <svg id="icon-quantum-bolt" class="w-4 h-4 shrink-0" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     <span class="hidden sm:inline" id="quantum-label">Quantum: ON</span>
@@ -207,13 +212,13 @@
                     </g>
                     <!-- Mjuk guldglöd i centrum -->
                     <circle cx="90" cy="90" r="46" fill="url(#goldGlow)"/>
-                    <!-- Centrerat 3x3 Glider-mönster (rutorna sitter på x/y: 36, 72, 108 med 3px marginal) -->
+                    <!-- Centrerat 3x3 Glider-mönster -->
                     <rect x="75" y="39" width="30" height="30" rx="7" fill="url(#cellCyan)"/>
                     <rect x="111" y="75" width="30" height="30" rx="7" fill="url(#cellCyan)"/>
                     <rect x="39" y="111" width="30" height="30" rx="7" fill="url(#cellPurple)"/>
                     <rect x="75" y="111" width="30" height="30" rx="7" fill="url(#cellPurple)"/>
                     <rect x="111" y="111" width="30" height="30" rx="7" fill="url(#cellCyan)"/>
-                    <!-- Gyllene Kvant-katalysator i exact center (72..108, 72..108) -->
+                    <!-- Gyllene Kvant-katalysator i exakt center -->
                     <circle cx="90" cy="90" r="14" fill="#f59e0b"/>
                     <circle cx="90" cy="90" r="6" fill="#fef3c7" opacity="0.8"/>
                 </svg>
@@ -246,7 +251,7 @@
                     <div class="w-7 h-7 rounded-lg bg-purple-600/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">3</div>
                     <div class="text-xs text-slate-700 dark:text-slate-300">
                         <strong class="text-slate-900 dark:text-white block">Pan, Zoom & Patterns</strong>
-                        Pinch or drag with two fingers (or right-click drag &amp; scroll on desktop) to pan and zoom. Open the <span class="font-semibold">folder</span> to load classic patterns.
+                        Select the <span class="font-semibold">Hand tool</span> on the left (or use two fingers / right-click drag) to pan the grid. Open the <span class="font-semibold">folder</span> for classic patterns.
                     </div>
                 </div>
             </div>
@@ -265,20 +270,26 @@
 
     <!-- Huvud-Canvas för Rutnätet -->
     <main class="relative flex-1 w-full h-full">
-        <canvas id="gameCanvas"></canvas>
+        <canvas id="gameCanvas" class="cursor-crosshair"></canvas>
         
         <!-- Flytande Verktygsväljare (Vänster sida, skarp kontrast) -->
-        <div class="fixed left-3 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 p-1.5 rounded-2xl">
-            <button data-tool="draw" class="tool-btn active bg-blue-600 text-white p-2.5 rounded-xl transition active:scale-90" title="Draw Cells (Pencil)">
+        <div class="fixed left-3 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1.5 hud-surface bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 p-1.5 rounded-2xl">
+            <button data-tool="draw" class="tool-btn active bg-blue-600 text-white shadow-md p-2.5 rounded-xl transition active:scale-90" title="Draw Cells (Pencil) [D]">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
             </button>
-            <button data-tool="erase" class="tool-btn text-slate-600 dark:text-slate-300 p-2.5 rounded-xl transition active:scale-90" title="Eraser">
+            <button data-tool="erase" class="tool-btn text-slate-600 dark:text-slate-300 p-2.5 rounded-xl transition active:scale-90" title="Eraser [E]">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10m-7.5-3.5l-4.8-4.8a2 2 0 010-2.83l8.48-8.48a2 2 0 012.83 0l4.8 4.8a2 2 0 010 2.83L12.33 17.5a2 2 0 01-2.83 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.5 8.5l7 7"/></svg>
             </button>
-            <button data-tool="catalyst" class="tool-btn text-amber-500 p-2.5 rounded-xl transition active:scale-90" title="Quantum Catalyst (Immortal Energy Node)">
+            <button data-tool="catalyst" class="tool-btn text-amber-500 p-2.5 rounded-xl transition active:scale-90" title="Quantum Catalyst (Immortal Energy Node) [C]">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
             </button>
+            <!-- NY KNAPP: Panorera Grid (Hand Tool) -->
+            <button data-tool="pan" class="tool-btn text-slate-600 dark:text-slate-300 p-2.5 rounded-xl transition active:scale-90" title="Pan / Move Grid (Hand Tool) [H]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/></svg>
+            </button>
+
             <div class="h-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+
             <button id="btn-quick-save" class="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 p-2.5 rounded-xl transition active:scale-90" title="Save Current Design">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h9l3 3v13a2 2 0 01-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 21v-6h6v6M9 3v4h5"/></svg>
             </button>
@@ -362,7 +373,7 @@
                 </button>
             </div>
 
-            <!-- Category Filter Grid (Ingen horisontell beskärning på iPhone) -->
+            <!-- Category Filter Grid -->
             <div id="pattern-categories" class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 pb-3 mb-2 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
                 <button data-cat="all" class="cat-pill active px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-blue-600 text-white text-center truncate transition">All (30)</button>
                 <button data-cat="saved" id="tab-saved-btn" class="cat-pill px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-center truncate transition">⭐ Saved (0)</button>
@@ -473,7 +484,7 @@
         Message
     </div>
 
-    <!-- INSTALL APP / ADD TO HOME SCREEN PROMPT (Shown automatically in browser when not installed) -->
+    <!-- INSTALL APP / ADD TO HOME SCREEN PROMPT -->
     <div id="install-banner" class="fixed left-3 right-3 sm:left-1/2 sm:-translate-x-1/2 sm:max-w-md z-40 hidden transition-all duration-300" style="bottom: calc(max(env(safe-area-inset-bottom, 0px), 10px) + 72px);">
         <div class="hud-surface bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-md border border-blue-500/40 rounded-2xl p-3.5 shadow-2xl flex items-start gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
@@ -503,7 +514,7 @@
          * BIO GENESIS — Quantum Game of Life Engine
          * Single-file self-contained architecture with B3/S23 + custom rules,
          * Quantum Aging & Catalysts, Generative Web Audio, Undo History,
-         * URL Share Encoding, Local Saved Library & PWA Install Prompt.
+         * Pan/Hand Tool, URL Share Encoding, Local Saved Library & PWA Install Prompt.
          */
 
         // --- AUTOMATIC HOME SCREEN FRESHNESS SYNC ---
@@ -567,7 +578,6 @@
                     document.getElementById('apple-touch-icon-link').href = pngDataUrl;
                     document.getElementById('app-icon-link').href = pngDataUrl;
 
-                    // Generate dynamic Web App Manifest for Android / Desktop one-click PWA install
                     const baseStartUrl = window.location.href.split('#')[0].split('?')[0];
                     const manifestObj = {
                         name: 'Bio Genesis — Quantum Game of Life',
@@ -588,9 +598,7 @@
                     URL.revokeObjectURL(url);
                 };
                 img.src = url;
-            } catch (e) {
-                // Fallback if SVG serialization is blocked
-            }
+            } catch (e) {}
         }
 
         // --- INSTALL APP / ADD TO HOME SCREEN PROMPT ---
@@ -671,7 +679,6 @@
         function applyUserSettings(settings) {
             if (!settings || typeof settings !== 'object') return;
 
-            // Theme (Light / Dark)
             if (typeof settings.darkMode === 'boolean') {
                 const html = document.documentElement;
                 html.classList.toggle('dark', settings.darkMode);
@@ -682,7 +689,6 @@
                 document.getElementById('icon-moon').classList.toggle('hidden', settings.darkMode);
             }
 
-            // Quantum Mode
             if (typeof settings.quantumMode === 'boolean') {
                 quantumMode = settings.quantumMode;
                 const btnQ = document.getElementById('btn-quantum');
@@ -699,7 +705,6 @@
                 }
             }
 
-            // Generative Audio
             if (typeof settings.soundEnabled === 'boolean') {
                 soundEnabled = settings.soundEnabled;
                 const btnSound = document.getElementById('btn-sound');
@@ -718,7 +723,6 @@
                 }
             }
 
-            // Simulation Speed (FPS)
             if (typeof settings.targetFPS === 'number' && settings.targetFPS >= 1 && settings.targetFPS <= 60) {
                 targetFPS = settings.targetFPS;
                 const slider = document.getElementById('speed-slider');
@@ -727,7 +731,6 @@
                 if (speedVal) speedVal.textContent = `${targetFPS} FPS`;
             }
 
-            // Universe Ruleset
             if (typeof settings.currentRule === 'string') {
                 currentRule = settings.currentRule;
                 parseRuleString(currentRule);
@@ -735,7 +738,6 @@
                 if (ruleSelect) ruleSelect.value = currentRule;
             }
 
-            // Toroid Edge Wrapping
             if (typeof settings.wrapEdges === 'boolean') {
                 wrapEdges = settings.wrapEdges;
                 const wrapToggle = document.getElementById('wrap-toggle');
@@ -760,7 +762,7 @@
         let quantumMode = true;
         let wrapEdges = true;
         let soundEnabled = false;
-        let activeTool = 'draw'; // 'draw' | 'erase' | 'catalyst'
+        let activeTool = 'draw'; // 'draw' | 'erase' | 'catalyst' | 'pan'
         let currentCategory = 'all';
         let currentRule = 'B3/S23';
         let birthRules = new Set([3]);
@@ -795,7 +797,7 @@
             if (!persistent) {
                 toastTimeout = setTimeout(() => {
                     toastEl.classList.add('opacity-0');
-                }, 5000);
+                }, 3200);
             }
         }
 
@@ -830,7 +832,6 @@
         }
 
         // --- GRID HELPERS ---
-        // Cell values: 0 = empty, >0 = alive cell age (1..255), -1 = immortal Quantum Catalyst
         function createEmptyGrid() {
             trailGrid = Array.from({ length: GRID_SIZE }, () => new Float32Array(GRID_SIZE));
             return Array.from({ length: GRID_SIZE }, () => new Int16Array(GRID_SIZE));
@@ -893,7 +894,7 @@
 
         // --- SIMULATION STEP ENGINE ---
         function stepSimulation(fromManual = false) {
-            if (generation === 0 && population > 0) {
+            if (generation === 0 && population > 0 && !initialDesignSnapshot) {
                 captureInitialSnapshot();
             }
             if (!fromManual) pushHistory();
@@ -1039,6 +1040,15 @@
             render();
         }
 
+        function clampCamera() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const totalW = GRID_SIZE * cellSize;
+            const totalH = GRID_SIZE * cellSize;
+            const margin = 80; // Keep at least 80px of grid visible on screen
+            cameraX = Math.max(margin - totalW, Math.min(rect.width - margin, cameraX));
+            cameraY = Math.max(margin - totalH, Math.min(rect.height - margin, cameraY));
+        }
+
         function render() {
             if (!grid || grid.length === 0) return;
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -1073,7 +1083,7 @@
             }
 
             // World border
-            ctx.strokeStyle = isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(37, 99, 235, 0.25)';
+            ctx.strokeStyle = isDark ? 'rgba(59, 130, 246, 0.35)' : 'rgba(37, 99, 235, 0.35)';
             ctx.lineWidth = 1.5;
             ctx.strokeRect(cameraX, cameraY, GRID_SIZE * cellSize, GRID_SIZE * cellSize);
 
@@ -1107,7 +1117,7 @@
                             ctx.fill();
                         }
                     } else {
-                        // Living Cell (Age gradient in Quantum mode, crisp cyan/blue in Classic mode)
+                        // Living Cell
                         if (!quantumMode) {
                             ctx.fillStyle = isDark ? '#38bdf8' : '#2563eb';
                         } else if (val === 1) {
@@ -1137,13 +1147,75 @@
         // --- INTERACTION: DRAWING, ERASING, PANNING & PINCH ZOOM ---
         let isPointerDown = false;
         let isPanning = false;
+        let isSpacePressed = false;
+        let previousToolBeforeSpace = null;
         let panStartX = 0;
         let panStartY = 0;
         let lastPaintedKey = '';
-        let strokeDrawValue = null; // 1 = paint cells, 0 = erase cells during current stroke
+        let strokeDrawValue = null;
         let initialPinchDist = null;
         let initialPinchCellSize = DEFAULT_CELL_SIZE;
         let lastTouchTimestamp = 0;
+        let pendingTouchTimer = null;
+        let pendingTouchPoint = null;
+        let didGestureInTouch = false;
+        const TOUCH_DRAW_DELAY_MS = 65; // Väntar kort för att upptäcka 2-finger pinch/pan innan cell ritas
+
+        function clearPendingTouchDraw() {
+            if (pendingTouchTimer !== null) {
+                clearTimeout(pendingTouchTimer);
+                pendingTouchTimer = null;
+            }
+            pendingTouchPoint = null;
+        }
+
+        function commitPendingTouchDraw() {
+            if (!pendingTouchPoint) return;
+            const pt = pendingTouchPoint;
+            clearPendingTouchDraw();
+            isPointerDown = true;
+            lastPaintedKey = '';
+            strokeDrawValue = null;
+            pushHistory();
+            applyToolAt(pt.clientX, pt.clientY, true);
+        }
+
+        function updateCanvasCursor() {
+            if (isPanning) {
+                canvas.style.cursor = 'grabbing';
+            } else if (activeTool === 'pan' || isSpacePressed) {
+                canvas.style.cursor = 'grab';
+            } else {
+                canvas.style.cursor = 'crosshair';
+            }
+        }
+
+        function selectTool(toolName, silent = false) {
+            activeTool = toolName;
+            document.querySelectorAll('.tool-btn').forEach(b => {
+                b.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow-md');
+                if (b.dataset.tool === 'catalyst') {
+                    b.classList.add('text-amber-500');
+                } else {
+                    b.classList.add('text-slate-600', 'dark:text-slate-300');
+                }
+                if (b.dataset.tool === toolName) {
+                    b.classList.remove('text-slate-600', 'dark:text-slate-300', 'text-amber-500');
+                    b.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-md');
+                }
+            });
+            updateCanvasCursor();
+            if (!silent) {
+                const labels = {
+                    draw: 'Draw Tool: Tap or drag to toggle cells',
+                    erase: 'Eraser Tool: Drag to clear cells',
+                    catalyst: 'Catalyst Tool: Place immortal energy nodes',
+                    pan: 'Pan Tool: Drag anywhere to move the grid'
+                };
+                if (labels[toolName]) showToast(labels[toolName]);
+            }
+        }
+
         function screenToCell(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
             const c = Math.floor((clientX - rect.left - cameraX) / cellSize);
@@ -1210,6 +1282,7 @@
             cameraX = cx - (cx - cameraX) * ratio;
             cameraY = cy - (cy - cameraY) * ratio;
             cellSize = newSize;
+            clampCamera();
             updateZoomLabel();
             render();
         }
@@ -1226,13 +1299,16 @@
 
         canvas.addEventListener('mousedown', (e) => {
             if (Date.now() - lastTouchTimestamp < 600) return;
-            if (e.button === 1 || e.button === 2) {
+            // Pan if Pan tool is selected, Spacebar is held, or middle/right mouse button
+            if (activeTool === 'pan' || isSpacePressed || e.button === 1 || e.button === 2) {
                 e.preventDefault();
                 isPanning = true;
                 panStartX = e.clientX - cameraX;
                 panStartY = e.clientY - cameraY;
+                updateCanvasCursor();
                 return;
             }
+            if (e.button !== 0) return;
             isPointerDown = true;
             lastPaintedKey = '';
             strokeDrawValue = null;
@@ -1244,6 +1320,7 @@
             if (isPanning) {
                 cameraX = e.clientX - panStartX;
                 cameraY = e.clientY - panStartY;
+                clampCamera();
                 render();
                 return;
             }
@@ -1260,6 +1337,7 @@
             isPanning = false;
             lastPaintedKey = '';
             strokeDrawValue = null;
+            updateCanvasCursor();
         });
 
         canvas.addEventListener('wheel', (e) => {
@@ -1271,7 +1349,10 @@
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             lastTouchTimestamp = Date.now();
-            if (e.touches.length === 2) {
+            if (e.touches.length >= 2) {
+                // Avbryt eventuell väntande 1-finger-ritning så att nypzoom aldrig ritar en oönskad ruta
+                clearPendingTouchDraw();
+                didGestureInTouch = true;
                 isPointerDown = false;
                 isPanning = true;
                 initialPinchDist = getPinchDistance(e.touches);
@@ -1284,18 +1365,36 @@
             }
             if (e.touches.length === 1) {
                 const t = e.touches[0];
-                isPointerDown = true;
-                lastPaintedKey = '';
-                strokeDrawValue = null;
-                pushHistory();
-                applyToolAt(t.clientX, t.clientY, true);
+                didGestureInTouch = false;
+                if (activeTool === 'pan') {
+                    isPanning = true;
+                    panStartX = t.clientX - cameraX;
+                    panStartY = t.clientY - cameraY;
+                    return;
+                }
+                // Fördröj ritstarten med 65ms så att ett andra finger (pinch-to-zoom) hinner landa utan att rita en ruta
+                clearPendingTouchDraw();
+                pendingTouchPoint = { clientX: t.clientX, clientY: t.clientY };
+                pendingTouchTimer = setTimeout(() => {
+                    commitPendingTouchDraw();
+                }, TOUCH_DRAW_DELAY_MS);
             }
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             lastTouchTimestamp = Date.now();
-            if (e.touches.length === 2 && initialPinchDist) {
+            if (e.touches.length >= 2) {
+                clearPendingTouchDraw();
+                didGestureInTouch = true;
+                if (!initialPinchDist) {
+                    initialPinchDist = getPinchDistance(e.touches);
+                    initialPinchCellSize = cellSize;
+                    const startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                    const startMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                    panStartX = startMidX - cameraX;
+                    panStartY = startMidY - cameraY;
+                }
                 const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                 const newDist = getPinchDistance(e.touches);
@@ -1313,20 +1412,66 @@
                 if (isPanning) {
                     cameraX = t.clientX - panStartX;
                     cameraY = t.clientY - panStartY;
+                    clampCamera();
                     render();
-                } else if (isPointerDown) {
-                    applyToolAt(t.clientX, t.clientY);
+                } else {
+                    if (pendingTouchPoint) {
+                        // Om användaren drar direkt med ett finger startar vi ritningen omedelbart
+                        commitPendingTouchDraw();
+                    }
+                    if (isPointerDown) {
+                        applyToolAt(t.clientX, t.clientY);
+                    }
                 }
             }
         }, { passive: false });
 
         canvas.addEventListener('touchend', (e) => {
             lastTouchTimestamp = Date.now();
+            if (e.touches.length >= 2) {
+                // Fortfarande 2+ fingrar på skärmen: uppdatera referenspunkten för fortsatt zoom/pan
+                initialPinchDist = getPinchDistance(e.touches);
+                initialPinchCellSize = cellSize;
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                panStartX = midX - cameraX;
+                panStartY = midY - cameraY;
+                return;
+            }
+            if (e.touches.length === 1) {
+                // Ett finger lyftes efter en pinch/pan-gest: fortsätt panorera med det kvarvarande fingret och rita ALDRIG
+                if (isPanning || didGestureInTouch) {
+                    isPanning = true;
+                    isPointerDown = false;
+                    panStartX = e.touches[0].clientX - cameraX;
+                    panStartY = e.touches[0].clientY - cameraY;
+                    initialPinchDist = null;
+                }
+                return;
+            }
+            // Alla fingrar har lyfts från skärmen (e.touches.length === 0)
+            if (pendingTouchPoint && !didGestureInTouch) {
+                // Snabbt enskilt tryck (tap) för att markera/avmarkera en enstaka ruta
+                commitPendingTouchDraw();
+            } else {
+                clearPendingTouchDraw();
+            }
             if (isPointerDown && generation === 0) {
                 captureInitialSnapshot();
             }
             isPointerDown = false;
             isPanning = false;
+            didGestureInTouch = false;
+            initialPinchDist = null;
+            lastPaintedKey = '';
+            strokeDrawValue = null;
+        });
+
+        canvas.addEventListener('touchcancel', () => {
+            clearPendingTouchDraw();
+            isPointerDown = false;
+            isPanning = false;
+            didGestureInTouch = false;
             initialPinchDist = null;
             lastPaintedKey = '';
             strokeDrawValue = null;
@@ -1691,8 +1836,8 @@
                 });
             }
 
-            const offsetR = Math.floor((GRID_SIZE - maxR) / 2);
-            const offsetC = Math.floor((GRID_SIZE - maxC) / 2);
+            const offsetR = Math.floor((GRID_SIZE - (maxR + 1)) / 2);
+            const offsetC = Math.floor((GRID_SIZE - (maxC + 1)) / 2);
 
             pattern.cells.forEach(([r, c]) => {
                 const nr = r + offsetR;
@@ -1838,7 +1983,13 @@
                     if (err && err.name === 'AbortError') return;
                 }
             }
-            // Clipboard fallback
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    showToast('🔗 Share link copied to clipboard!');
+                    return;
+                } catch (e) {}
+            }
             const tempInput = document.createElement('input');
             tempInput.value = shareUrl;
             document.body.appendChild(tempInput);
@@ -2012,17 +2163,7 @@
         // --- UI EVENT LISTENERS ---
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                activeTool = btn.dataset.tool;
-                document.querySelectorAll('.tool-btn').forEach(b => {
-                    b.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow-md');
-                    if (b.dataset.tool === 'catalyst') {
-                        b.classList.add('text-amber-500');
-                    } else {
-                        b.classList.add('text-slate-600', 'dark:text-slate-300');
-                    }
-                });
-                btn.classList.remove('text-slate-600', 'dark:text-slate-300', 'text-amber-500');
-                btn.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-md');
+                selectTool(btn.dataset.tool, false);
             });
         });
 
@@ -2311,6 +2452,12 @@
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
             if (e.code === 'Space') {
                 e.preventDefault();
+                if (!isSpacePressed) {
+                    isSpacePressed = true;
+                    updateCanvasCursor();
+                }
+            } else if (e.code === 'Enter') {
+                e.preventDefault();
                 document.getElementById('btn-play-pause').click();
             } else if (e.code === 'ArrowRight') {
                 e.preventDefault();
@@ -2318,6 +2465,26 @@
             } else if (e.code === 'ArrowLeft') {
                 e.preventDefault();
                 document.getElementById('btn-step-back').click();
+            } else if (e.key === 'd' || e.key === 'D') {
+                selectTool('draw');
+            } else if (e.key === 'e' || e.key === 'E') {
+                selectTool('erase');
+            } else if (e.key === 'c' || e.key === 'C') {
+                selectTool('catalyst');
+            } else if (e.key === 'h' || e.key === 'H') {
+                selectTool('pan');
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                const wasHolding = isSpacePressed;
+                isSpacePressed = false;
+                updateCanvasCursor();
+                // If user tapped Space quickly without dragging to pan, toggle Play/Pause
+                if (wasHolding && !isPanning && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+                    document.getElementById('btn-play-pause').click();
+                }
             }
         });
 
@@ -2396,7 +2563,6 @@
                 showToast(`Loaded shared design: ${sharedDesign.name}`);
                 setTimeout(showInstallPromptIfEligible, 900);
             } else {
-                // Start with empty grid
                 population = 0;
                 generation = 0;
                 updateHUD();
