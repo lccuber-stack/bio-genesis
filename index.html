@@ -225,7 +225,7 @@
             </div>
 
             <h1 class="text-2xl font-bold tracking-tight mb-1">Bio Genesis</h1>
-            <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">Quantum Game of Life</p>
+            <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">Quantum Game of Life <span class="app-version-badge font-mono opacity-80">v1.4.0</span></p>
             
             <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-5">
                 Create digital life on an infinite grid. Every cell lives, ages, or dies based on its neighbors—watch simple patterns evolve into living organisms.
@@ -439,6 +439,26 @@
                     <input id="wrap-toggle" type="checkbox" checked class="w-5 h-5 accent-blue-600 rounded cursor-pointer">
                 </div>
 
+                <!-- Version & GitHub Live Sync -->
+                <div class="p-3.5 rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">App Version &amp; Sync</div>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span id="current-version-label" class="font-mono text-sm font-bold text-slate-900 dark:text-white">v1.4.0</span>
+                                <span id="version-status-pill" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Up to date</span>
+                            </div>
+                        </div>
+                        <button id="btn-check-update" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 active:scale-95 transition">
+                            <svg id="icon-sync-spin" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span id="btn-update-text">Update App</span>
+                        </button>
+                    </div>
+                    <p id="version-sync-note" class="text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+                        Pulls the latest release from GitHub without re-adding to your Home Screen. All saved designs stay safe.
+                    </p>
+                </div>
+
                 <!-- Clear Grid -->
                 <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex gap-3">
                     <button id="btn-clear" class="flex-1 py-3 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-sm transition active:scale-95">
@@ -517,42 +537,155 @@
          * Pan/Hand Tool, URL Share Encoding, Local Saved Library & PWA Install Prompt.
          */
 
-        // --- AUTOMATIC HOME SCREEN FRESHNESS SYNC ---
-        (function initHomeScreenAutoRefresh() {
-            const VERSION_PARAM = 'v';
-            let lastRefreshCheck = Date.now();
+        // --- APP VERSIONING & GITHUB LIVE SYNC (PRESERVES ALL SAVED DESIGNS) ---
+        const APP_VERSION = '1.4.0';
+        const VERSION_CHECK_KEY = 'biogenesis_last_known_version_v1';
+        let latestRemoteVersion = APP_VERSION;
+        let isCheckingUpdate = false;
 
-            async function checkForLatestVersion() {
-                if (Date.now() - lastRefreshCheck < 4000) return;
-                lastRefreshCheck = Date.now();
-                try {
-                    const cleanUrl = window.location.href.split('#')[0].split('?')[0];
-                    if (!cleanUrl.startsWith('http')) return;
-                    if ('caches' in window) {
-                        const keys = await caches.keys();
-                        await Promise.all(keys.map(k => caches.delete(k)));
-                    }
-                    const res = await fetch(`${cleanUrl}?${VERSION_PARAM}=${Date.now()}`, { cache: 'no-store' });
-                    if (!res.ok) return;
-                    const latestHtml = await res.text();
-                    const prevHtml = sessionStorage.getItem('biogenesis_cached_html');
-                    if (prevHtml && prevHtml !== latestHtml) {
-                        sessionStorage.setItem('biogenesis_cached_html', latestHtml);
-                        const hash = window.location.hash || '';
-                        window.location.replace(`${cleanUrl}?${VERSION_PARAM}=${Date.now()}${hash}`);
-                    } else {
-                        sessionStorage.setItem('biogenesis_cached_html', latestHtml);
-                    }
-                } catch (e) {
-                    // Offline fallback: keep running smoothly with saved local data
+        function extractVersionFromHtml(htmlText) {
+            const match = htmlText.match(/const\s+APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+            return match ? match[1] : null;
+        }
+
+        function compareSemver(a, b) {
+            const pa = String(a).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+            const pb = String(b).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+            const len = Math.max(pa.length, pb.length);
+            for (let i = 0; i < len; i++) {
+                const diff = (pa[i] || 0) - (pb[i] || 0);
+                if (diff !== 0) return diff > 0 ? 1 : -1;
+            }
+            return 0;
+        }
+
+        function updateVersionBadgesUI(remoteVer = null, statusText = null) {
+            document.querySelectorAll('.app-version-badge').forEach(el => {
+                el.textContent = `v${APP_VERSION}`;
+            });
+            const currEl = document.getElementById('current-version-label');
+            const pillEl = document.getElementById('version-status-pill');
+            const btnText = document.getElementById('btn-update-text');
+            if (currEl) currEl.textContent = `v${APP_VERSION}`;
+
+            if (!pillEl) return;
+            if (statusText) {
+                pillEl.textContent = statusText;
+                pillEl.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400';
+                return;
+            }
+            if (remoteVer && compareSemver(remoteVer, APP_VERSION) > 0) {
+                pillEl.textContent = `New: v${remoteVer}`;
+                pillEl.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400';
+                if (btnText) btnText.textContent = `Install v${remoteVer}`;
+            } else {
+                pillEl.textContent = `Latest (v${APP_VERSION})`;
+                pillEl.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+                if (btnText) btnText.textContent = 'Check & Update';
+            }
+        }
+
+        async function clearAppCachesOnly() {
+            // Rensar ENDAST HTTP/ServiceWorker-cacher — rör ALDRIG localStorage där sparade designer ligger!
+            try {
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(k => caches.delete(k)));
                 }
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(r => r.update().catch(() => {})));
+                }
+            } catch (e) {}
+        }
+
+        async function syncWithGitHub(manualTrigger = false) {
+            if (isCheckingUpdate) return;
+            const cleanUrl = window.location.href.split('#')[0].split('?')[0];
+            if (!cleanUrl.startsWith('http')) {
+                if (manualTrigger) {
+                    showToast(`Running local preview v${APP_VERSION} — all designs saved.`);
+                }
+                return;
             }
 
+            isCheckingUpdate = true;
+            const spinIcon = document.getElementById('icon-sync-spin');
+            if (spinIcon) spinIcon.classList.add('animate-spin');
+            if (manualTrigger) updateVersionBadgesUI(null, 'Checking GitHub...');
+
+            try {
+                await clearAppCachesOnly();
+                const bustUrl = `${cleanUrl}?t=${Date.now()}`;
+                const res = await fetch(bustUrl, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const latestHtml = await res.text();
+                const fetchedVersion = extractVersionFromHtml(latestHtml);
+                const prevCachedHtml = sessionStorage.getItem('biogenesis_cached_html');
+
+                if (fetchedVersion) {
+                    latestRemoteVersion = fetchedVersion;
+                    localStorage.setItem(VERSION_CHECK_KEY, fetchedVersion);
+                }
+
+                const hasNewerSemver = fetchedVersion && compareSemver(fetchedVersion, APP_VERSION) > 0;
+                const hasHtmlDiff = prevCachedHtml && prevCachedHtml !== latestHtml;
+
+                if (manualTrigger || hasNewerSemver || hasHtmlDiff) {
+                    sessionStorage.setItem('biogenesis_cached_html', latestHtml);
+                    if (manualTrigger) {
+                        const targetVer = fetchedVersion ? `v${fetchedVersion}` : 'latest version';
+                        showToast(`Updating to ${targetVer}... Your saved designs are preserved!`);
+                        // Spara pågående rutnät temporärt så att inte ens nuvarande ritning försvinner vid omladdning
+                        try {
+                            const activeDraft = extractCurrentDesignData('__autosave_draft__');
+                            if (activeDraft) {
+                                sessionStorage.setItem('biogenesis_reload_draft', JSON.stringify(activeDraft));
+                            }
+                        } catch (e) {}
+                        setTimeout(() => {
+                            const hash = window.location.hash || '';
+                            window.location.replace(`${cleanUrl}?v=${fetchedVersion || Date.now()}&r=${Date.now()}${hash}`);
+                        }, 650);
+                        return;
+                    } else if (hasNewerSemver) {
+                        updateVersionBadgesUI(fetchedVersion);
+                        showToast(`New version v${fetchedVersion} available on GitHub! Open ••• to update.`);
+                    }
+                } else {
+                    sessionStorage.setItem('biogenesis_cached_html', latestHtml);
+                    updateVersionBadgesUI(fetchedVersion || APP_VERSION);
+                }
+            } catch (e) {
+                updateVersionBadgesUI(latestRemoteVersion);
+                if (manualTrigger) {
+                    showToast('Offline or GitHub unreachable — cached designs are safe.');
+                }
+            } finally {
+                isCheckingUpdate = false;
+                if (spinIcon) spinIcon.classList.remove('animate-spin');
+            }
+        }
+
+        (function initHomeScreenAutoRefresh() {
+            let lastRefreshCheck = 0;
+            function throttledAutoCheck() {
+                if (Date.now() - lastRefreshCheck < 8000) return;
+                lastRefreshCheck = Date.now();
+                syncWithGitHub(false);
+            }
             document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') checkForLatestVersion();
+                if (document.visibilityState === 'visible') throttledAutoCheck();
             });
             window.addEventListener('pageshow', (e) => {
-                if (e.persisted) checkForLatestVersion();
+                if (e.persisted) throttledAutoCheck();
             });
         })();
 
@@ -584,6 +717,7 @@
                         short_name: 'Bio Genesis',
                         description: 'Create and evolve digital life on an infinite quantum grid.',
                         start_url: baseStartUrl,
+                        scope: baseStartUrl.substring(0, baseStartUrl.lastIndexOf('/') + 1),
                         display: 'standalone',
                         background_color: '#090d16',
                         theme_color: '#090d16',
@@ -2407,7 +2541,13 @@
 
         // More Settings Modal
         document.getElementById('btn-more').addEventListener('click', () => {
+            updateVersionBadgesUI(latestRemoteVersion);
             document.getElementById('modal-more').classList.remove('hidden');
+        });
+
+        // Manual GitHub Update Button
+        document.getElementById('btn-check-update').addEventListener('click', () => {
+            syncWithGitHub(true);
         });
 
         document.querySelectorAll('.close-modal').forEach(btn => {
@@ -2545,6 +2685,7 @@
             grid = createEmptyGrid();
             loadUserSettings();
             generateAppIconsAndManifest();
+            updateVersionBadgesUI();
             updateSavedTabCount();
             updateZoomLabel();
             resizeCanvas();
@@ -2556,12 +2697,25 @@
                 welcomeScreen.classList.add('hidden', 'opacity-0', 'pointer-events-none');
             }
 
+            // Återställ eventuellt pågående rutnät om användaren nyss tryckte på "Update App"
+            let restoredDraft = null;
+            try {
+                const rawDraft = sessionStorage.getItem('biogenesis_reload_draft');
+                if (rawDraft) {
+                    sessionStorage.removeItem('biogenesis_reload_draft');
+                    restoredDraft = JSON.parse(rawDraft);
+                }
+            } catch (e) {}
+
             const sharedDesign = decodeDesignFromHash();
             if (sharedDesign) {
                 welcomeScreen.classList.add('hidden', 'opacity-0', 'pointer-events-none');
                 loadSavedDesign(sharedDesign);
                 showToast(`Loaded shared design: ${sharedDesign.name}`);
                 setTimeout(showInstallPromptIfEligible, 900);
+            } else if (restoredDraft) {
+                loadPattern(restoredDraft);
+                showToast(`Updated to v${APP_VERSION} — all designs & grid preserved!`);
             } else {
                 population = 0;
                 generation = 0;
@@ -2571,6 +2725,9 @@
                     setTimeout(showInstallPromptIfEligible, 900);
                 }
             }
+
+            // Kontrollera tyst i bakgrunden om GitHub har en nyare version
+            setTimeout(() => syncWithGitHub(false), 1500);
             requestAnimationFrame(gameLoop);
         };
     </script>
